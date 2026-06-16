@@ -1,0 +1,39 @@
+site_name: cvnpy
+site_description: Python tools for CVN-style cortical flatmap and inflated-surface visualization
+site_url: https://cvnpy.readthedocs.io/
+repo_url: https://github.com/CharestLab/cvnpy
+repo_name: CharestLab/cvnpy
+
+theme:
+  name: material
+  features:
+    - navigation.sections
+    - navigation.indexes
+    - content.code.copy
+
+nav:
+  - Home: index.md
+  - Getting Started: GETTING_STARTED.md
+  - Flatmap Demo: FLATMAP_DEMO.md
+  - Inflated Demo: INFLATED_DEMO.md
+  - API: API.md
+  - MATLAB Parity: MATLAB_PARITY.md
+  - Troubleshooting: TROUBLESHOOTING.md
+  - Development: DEVELOPMENT.md
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            docstring_style: google
+            show_source: true
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - fenced_code
+  - tables
+  - toc:
+      permalink: true
