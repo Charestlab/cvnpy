@@ -1,8 +1,8 @@
 site_name: cvnpy
 site_description: Python tools for CVN-style cortical flatmap and inflated-surface visualization
 site_url: https://cvnpy.readthedocs.io/
-repo_url: https://github.com/CharestLab/cvnpy
-repo_name: CharestLab/cvnpy
+repo_url: https://github.com/Charestlab/cvnpy
+repo_name: Charestlab/cvnpy
 
 theme:
   name: material

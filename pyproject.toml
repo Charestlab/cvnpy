@@ -53,10 +53,10 @@ docs = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/CharestLab/cvnpy"
+Homepage = "https://github.com/Charestlab/cvnpy"
 Documentation = "https://cvnpy.readthedocs.io/"
-Repository = "https://github.com/CharestLab/cvnpy"
-Issues = "https://github.com/CharestLab/cvnpy/issues"
+Repository = "https://github.com/Charestlab/cvnpy"
+Issues = "https://github.com/Charestlab/cvnpy/issues"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
