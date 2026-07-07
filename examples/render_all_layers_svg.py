@@ -235,8 +235,18 @@ def main() -> None:
     parser.add_argument("--inset-imageres", type=int, default=320)
     parser.add_argument("--inset-size-frac", type=float, default=0.20)
     parser.add_argument("--inset-margin-px", type=int, default=14)
-    parser.add_argument("--lh-rotate-deg", type=int, default=0)
-    parser.add_argument("--rh-rotate-deg", type=int, default=0)
+    parser.add_argument(
+        "--lh-rotate-deg",
+        type=int,
+        default=-90,
+        help="LH flatmap rotation in degrees; default -90 is 90 degrees clockwise.",
+    )
+    parser.add_argument(
+        "--rh-rotate-deg",
+        type=int,
+        default=90,
+        help="RH flatmap rotation in degrees; default 90 is 90 degrees counterclockwise.",
+    )
     parser.add_argument(
         "--pair-rh-shift-px",
         type=int,

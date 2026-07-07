@@ -878,13 +878,13 @@ def main() -> None:
     parser.add_argument(
         "--lh-rotate-deg",
         type=int,
-        default=0,
+        default=-90,
         help="Rotation for LH image in degrees (clockwise is negative).",
     )
     parser.add_argument(
         "--rh-rotate-deg",
         type=int,
-        default=0,
+        default=90,
         help="Rotation for RH image in degrees (counterclockwise is positive).",
     )
     parser.add_argument(
