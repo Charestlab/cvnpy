@@ -164,7 +164,7 @@ The SVG contains stable IDs for overlay workflows:
 - `colorbar`
 - `inset_lh` and `inset_rh` (when enabled)
 
-This is designed to support Kendrick-style post-hoc SVG overlays.
+This is designed to support Kendrick-style downstream SVG overlays.
 
 ## Default Colormap
 
@@ -186,7 +186,6 @@ You can override with `--cmap`.
 ## Known Limitations
 
 - Exact pixel-perfect parity with MATLAB outputs is still in progress.
-- Some edge/cut configurations may require tuning flatmap options for a given subject.
 - Public release requires final confirmation of GitHub organization, PyPI Trusted Publishing setup, and upstream license compatibility.
 
 ## Citation / Attribution

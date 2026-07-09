@@ -66,7 +66,7 @@ Caching:
 Flatmap controls:
 - `flat_margin_frac`
 
-`flat_margin_frac` is padding around the patch view. It is not an artifact filter.
+`flat_margin_frac` controls padding around the patch view.
 
 The flatmap value path is nearest-neighbor by design and matches MATLAB `spherelookup_vert2image.m`.
 

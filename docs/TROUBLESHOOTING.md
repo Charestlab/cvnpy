@@ -41,15 +41,11 @@ Fix:
 - increase `--flat-margin-frac` (e.g. `0.06`)
 - increase `--pair-margin-px` for bilateral output
 
-## 5) Boundary artifacts
-
-There are no public artifact-tuning flags. The production flatmap path is intended to follow the MATLAB lookup geometry rather than hide problems with post-hoc pixel filters.
+## 5) Renders look stale after updating `cvnpy`
 
 Fix:
-- regenerate with `--no-cache` once after changing `cvnpy`
-- verify that `--subject-dir` points to the intended NSD/CVN fsaverage subject
-- verify that both hemispheres have matching `surf/lh.full.flat.patch.3d`, `surf/rh.full.flat.patch.3d`, `curv`, and inflated/white surfaces
-- inspect the patch files if only one hemisphere or one boundary is affected
+- rerun once with `--no-cache`
+- or use a fresh `--cache-dir`
 
 ## 6) Colorbar labels or limits look wrong
 

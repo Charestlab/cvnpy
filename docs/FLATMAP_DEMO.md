@@ -115,14 +115,12 @@ Insets are rendered from `surftype='inflated'` using the same stat values and co
 
 ## Flatmap Geometry
 
-The flatmap path intentionally follows Kendrick's MATLAB lookup strategy:
+The flatmap path follows Kendrick's MATLAB lookup strategy:
 - read the FreeSurfer patch on the full surface vertex index basis
 - clean the flat patch polygon
 - generate a nearest-neighbor image lookup
 - mask pixels outside the patch boundary
 - map vertex values with `Lookup.imglookup`
-
-There are no exposed artifact-pruning flags. If a surface produces boundary problems, the correct fix is to inspect the surface/patch inputs or the parity code, not to tune image-space artifact filters.
 
 ## SVG Layering
 
