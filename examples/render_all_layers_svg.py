@@ -238,14 +238,14 @@ def main() -> None:
     parser.add_argument(
         "--lh-rotate-deg",
         type=int,
-        default=-90,
-        help="LH flatmap rotation in degrees; default -90 is 90 degrees clockwise.",
+        default=0,
+        help="LH flatmap rotation in degrees; negative values rotate clockwise.",
     )
     parser.add_argument(
         "--rh-rotate-deg",
         type=int,
-        default=90,
-        help="RH flatmap rotation in degrees; default 90 is 90 degrees counterclockwise.",
+        default=0,
+        help="RH flatmap rotation in degrees; positive values rotate counterclockwise.",
     )
     parser.add_argument(
         "--pair-rh-shift-px",

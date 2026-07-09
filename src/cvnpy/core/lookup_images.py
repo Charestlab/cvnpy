@@ -14,7 +14,6 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
-from scipy.ndimage import binary_dilation
 
 from ..io.metrics import read_surface_metric
 from ..io.surfaces import read_surface
@@ -26,7 +25,7 @@ from ..render.colormap import mat_to_rgb
 from ..render.overlay import apply_overlays
 from ..view.viewpoints import lookup_viewpoint
 
-LOOKUP_CACHE_VERSION = 9
+LOOKUP_CACHE_VERSION = 10
 
 
 def _is_flat_surftype(surftype: str) -> bool:
@@ -61,19 +60,7 @@ def _default_options() -> dict[str, Any]:
         "reset": False,
         "savelookup": True,
         "cache_dir": None,
-        "flat_apply_support_mask": False,
-        "flat_support_ratio": 2.5,
-        "trim_extrapolation_px": 0,
-        "prune_artifact_faces": False,
-        "prune_quantile": 99.0,
-        "prune_factor": 1.5,
-        "flat_mask_high_area_pixels": False,
-        "flat_filter_sparse_vertices": False,
-        "flat_sparse_vertex_quantile": 95.0,
-        "flat_sparse_vertex_factor": 1.2,
-        "flat_edge_trim_steps": 0,
         "flat_margin_frac": 0.04,
-        "flat_fill_small_holes_px": 0,
     }
 
 
@@ -221,11 +208,6 @@ def _generate_lookup(
     surf_kwargs: dict[str, Any] = {}
     if isinstance(surfdir_opt, str) and surfdir_opt:
         surf_kwargs["surfdir"] = surfdir_opt
-    if _is_flat_surftype(surftype):
-        surf_kwargs["flat_edge_trim_steps"] = int(
-            options.get("flat_edge_trim_steps", 0)
-        )
-
     surf = read_surface(subject, hemi, surftype, surfsuffix, **surf_kwargs)
 
     if _is_sphere_surftype(surftype):
@@ -246,25 +228,7 @@ def _generate_lookup(
             view[2],
             xyextent,
             imageres,
-            apply_support_mask=bool(options.get("flat_apply_support_mask", False)),
-            support_ratio=float(options.get("flat_support_ratio", 2.5)),
-            prune_artifact_faces=bool(options.get("prune_artifact_faces", False)),
-            prune_quantile=float(options.get("prune_quantile", 99.0)),
-            prune_factor=float(options.get("prune_factor", 1.5)),
-            mask_high_area_pixels=bool(
-                options.get("flat_mask_high_area_pixels", False)
-            ),
-            filter_sparse_vertices=bool(
-                options.get("flat_filter_sparse_vertices", False)
-            ),
-            sparse_vertex_quantile=float(
-                options.get("flat_sparse_vertex_quantile", 95.0)
-            ),
-            sparse_vertex_factor=float(
-                options.get("flat_sparse_vertex_factor", 1.2)
-            ),
             margin_frac=float(options.get("flat_margin_frac", 0.04)),
-            fill_small_holes_px=int(options.get("flat_fill_small_holes_px", 0)),
         )
     else:
         lookup = generate_surface_lookup(
@@ -302,14 +266,6 @@ def _lookup_one_hemi(
             local_options["overlayalpha"] = vert_to_image(alpha_arr, lk, badval=0.0)
 
     mapped = vert_to_image(vals, lk, badval=np.nan)
-    trim_px = int(local_options.get("trim_extrapolation_px", 0))
-    if trim_px > 0 and "extrapmask" in lk:
-        ex = np.asarray(lk["extrapmask"], dtype=bool)
-        if ex.shape == mapped.shape:
-            ex = binary_dilation(ex, iterations=trim_px)
-            mapped = mapped.copy()
-            mapped[ex] = np.nan
-
     rgb = mat_to_rgb(
         mapped,
         clim=local_options.get("clim"),
@@ -364,11 +320,6 @@ def lookup_images(
         surfdir_opt = options.get("surfdir")
         if isinstance(surfdir_opt, str) and surfdir_opt:
             surf_kwargs["surfdir"] = surfdir_opt
-        if _is_flat_surftype(str(options["surftype"])):
-            surf_kwargs["flat_edge_trim_steps"] = int(
-                options.get("flat_edge_trim_steps", 0)
-            )
-
         n_lh = int(
             read_surface(
                 subject,

@@ -10,28 +10,8 @@ from typing import Any
 
 import numpy as np
 from matplotlib.path import Path as MplPath
-from scipy import ndimage as ndi
 from scipy.interpolate import NearestNDInterpolator
 from scipy.spatial import cKDTree
-from skimage.draw import polygon
-
-
-def _barycentric(
-    px: np.ndarray,
-    py: np.ndarray,
-    tri2d: np.ndarray,
-) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    x1, y1 = tri2d[0]
-    x2, y2 = tri2d[1]
-    x3, y3 = tri2d[2]
-    denom = (y2 - y3) * (x1 - x3) + (x3 - x2) * (y1 - y3)
-    if abs(denom) < 1e-12:
-        z = np.zeros_like(px, dtype=float)
-        return z, z, z
-    w1 = ((y2 - y3) * (px - x3) + (x3 - x2) * (py - y3)) / denom
-    w2 = ((y3 - y1) * (px - x3) + (x1 - x3) * (py - y3)) / denom
-    w3 = 1.0 - w1 - w2
-    return w1, w2, w3
 
 
 def _as_img_shape(img_n: int | tuple[int, int], aspect: float) -> tuple[int, int]:
@@ -153,53 +133,6 @@ def _clean_flat_patch_polygon(
     return f, patchmask
 
 
-def _fill_small_extrap_holes(
-    extrapmask: np.ndarray,
-    imglookup: np.ndarray,
-    max_hole_px: int,
-    bary_face: np.ndarray | None = None,
-    bary_weights: np.ndarray | None = None,
-) -> tuple[np.ndarray, np.ndarray, np.ndarray | None, np.ndarray | None]:
-    bad = np.asarray(extrapmask, dtype=bool)
-    if not np.any(bad):
-        return extrapmask, imglookup, bary_face, bary_weights
-
-    # Robust/topological fill: close all enclosed invalid islands.
-    valid = ~bad
-    enclosed = ndi.binary_fill_holes(valid) & bad
-    if not np.any(enclosed):
-        return extrapmask, imglookup, bary_face, bary_weights
-
-    if max_hole_px > 0:
-        labels, nlab = ndi.label(enclosed)
-        counts = np.bincount(labels.ravel(), minlength=nlab + 1)
-        keep = np.zeros((nlab + 1,), dtype=bool)
-        keep[1:] = counts[1:] <= max_hole_px
-        fillmask = keep[labels] & enclosed
-    else:
-        fillmask = enclosed
-
-    validmask = ~bad
-    vy, vx = np.nonzero(validmask)
-    hy, hx = np.nonzero(fillmask)
-    if hy.size == 0 or vy.size == 0:
-        return extrapmask, imglookup, bary_face, bary_weights
-
-    tree = cKDTree(np.c_[vy.astype(float), vx.astype(float)])
-    _dist, nn = tree.query(np.c_[hy.astype(float), hx.astype(float)], k=1)
-    srcy = vy[nn]
-    srcx = vx[nn]
-
-    imglookup[hy, hx] = imglookup[srcy, srcx]
-    extrapmask[hy, hx] = False
-    if bary_face is not None:
-        bary_face[hy, hx] = bary_face[srcy, srcx]
-    if bary_weights is not None:
-        bary_weights[hy, hx, :] = bary_weights[srcy, srcx, :]
-
-    return extrapmask, imglookup, bary_face, bary_weights
-
-
 def generate_flat_lookup(
     verts: np.ndarray,
     faces: np.ndarray,
@@ -212,17 +145,7 @@ def generate_flat_lookup(
 ) -> dict:
     """Generate lookup tables for flat patch surfaces."""
     reversevert = kwargs.get("reversevert")
-    apply_support_mask = bool(kwargs.get("apply_support_mask", True))
-    support_ratio = float(kwargs.get("support_ratio", 2.5))
-    prune_artifact_faces = bool(kwargs.get("prune_artifact_faces", False))
-    prune_quantile = float(kwargs.get("prune_quantile", 99.0))
-    prune_factor = float(kwargs.get("prune_factor", 1.5))
-    mask_high_area_pixels = bool(kwargs.get("mask_high_area_pixels", True))
-    filter_sparse_vertices = bool(kwargs.get("filter_sparse_vertices", False))
-    sparse_vertex_quantile = float(kwargs.get("sparse_vertex_quantile", 95.0))
-    sparse_vertex_factor = float(kwargs.get("sparse_vertex_factor", 1.2))
     margin_frac = float(kwargs.get("margin_frac", 0.04))
-    fill_small_holes_px = int(kwargs.get("fill_small_holes_px", 0))
 
     verts = np.asarray(verts, dtype=float)
     faces = np.asarray(faces, dtype=np.int64)
@@ -319,29 +242,6 @@ def generate_flat_lookup(
 
     vertidx = np.arange(verts.shape[0], dtype=np.int64)
 
-    # Optional pruning of outlier faces that create large fan-like artifacts.
-    if prune_artifact_faces and faces_valid.shape[0] > 0:
-        fv = viewvert[faces_valid]
-        l12 = np.linalg.norm(fv[:, 0, :] - fv[:, 1, :], axis=1)
-        l23 = np.linalg.norm(fv[:, 1, :] - fv[:, 2, :], axis=1)
-        l31 = np.linalg.norm(fv[:, 2, :] - fv[:, 0, :], axis=1)
-        max_edge = np.maximum(l12, np.maximum(l23, l31))
-        area2 = np.abs(
-            (fv[:, 1, 0] - fv[:, 0, 0]) * (fv[:, 2, 1] - fv[:, 0, 1])
-            - (fv[:, 1, 1] - fv[:, 0, 1]) * (fv[:, 2, 0] - fv[:, 0, 0])
-        ) / 2.0
-
-        q = np.clip(prune_quantile, 80.0, 100.0)
-        e_thr = np.percentile(max_edge, q) * max(prune_factor, 1.0)
-        a_thr = np.percentile(area2, q) * max(prune_factor, 1.0)
-        keep = (max_edge <= e_thr) & (area2 <= a_thr)
-        # Keep pruning conservative: if too much gets removed, skip pruning.
-        if np.mean(keep) >= 0.5:
-            faces_valid = faces_valid[keep]
-
-    if faces_valid.shape[0] > 0:
-        # Re-clean again after optional pruning.
-        faces_valid, _ = _clean_flat_patch_polygon(faces_valid, viewvert, max_iter=10)
     if faces_valid.shape[0] > 0:
         flatmask_interp = np.zeros_like(flatmask)
         flatmask_interp[np.unique(faces_valid.ravel())] = True
@@ -363,19 +263,6 @@ def generate_flat_lookup(
         & flatmask_interp
     )
     interp_mask = viewmask_padded.copy()
-    if filter_sparse_vertices and np.count_nonzero(flatmask_interp) > 10:
-        pts_all = viewvert[flatmask_interp, :2]
-        tree_v = cKDTree(pts_all)
-        k = min(7, pts_all.shape[0])
-        d, _ = tree_v.query(pts_all, k=k)
-        # use distance to kth neighbor as local density proxy.
-        dk = d[:, -1] if d.ndim > 1 else d
-        q = np.clip(sparse_vertex_quantile, 50.0, 100.0)
-        thr = np.percentile(dk, q) * max(sparse_vertex_factor, 1.0)
-        reliable_local = dk <= thr
-        reliable_vertices = np.zeros_like(flatmask_interp)
-        reliable_vertices[np.where(flatmask_interp)[0][reliable_local]] = True
-        interp_mask = interp_mask & reliable_vertices
 
     if np.count_nonzero(interp_mask) == 0:
         imglookup = np.zeros((h, w), dtype=np.int64)
@@ -389,52 +276,6 @@ def generate_flat_lookup(
         mapped[extrapmask] = 0
         imglookup = mapped.astype(np.int64)
 
-    # Restrict valid pixels to areas actually covered by patch triangles.
-    # This avoids nearest-neighbor "bleeding" outside patch boundaries.
-    sx = (h - 1) / (xview[1] - xview[0])
-    sy = (w - 1) / (yview[1] - yview[0])
-    px = (viewvert[:, 0] - xview[0]) * sx
-    py = (viewvert[:, 1] - yview[0]) * sy
-
-    inside_mask = np.zeros((h, w), dtype=bool)
-    face_map = np.full((h, w), -1, dtype=np.int64)
-    bary_weights = np.zeros((h, w, 3), dtype=np.float32)
-    for fi_local, f in enumerate(faces_valid):
-        tri_px = np.array(
-            [[px[f[0]], py[f[0]]], [px[f[1]], py[f[1]]], [px[f[2]], py[f[2]]]],
-            dtype=float,
-        )
-        rr, cc = polygon(
-            tri_px[:, 0],
-            tri_px[:, 1],
-            shape=(h, w),
-        )
-        if rr.size == 0:
-            continue
-        w1, w2, w3 = _barycentric(rr.astype(float), cc.astype(float), tri_px)
-        valid = (w1 >= -1e-5) & (w2 >= -1e-5) & (w3 >= -1e-5)
-        if not np.any(valid):
-            continue
-        rr = rr[valid]
-        cc = cc[valid]
-        w1 = w1[valid]
-        w2 = w2[valid]
-        w3 = w3[valid]
-        # Keep first assignment to avoid boundary overwrite ambiguity.
-        unassigned = face_map[rr, cc] < 0
-        if not np.any(unassigned):
-            continue
-        rr = rr[unassigned]
-        cc = cc[unassigned]
-        w1 = w1[unassigned]
-        w2 = w2[unassigned]
-        w3 = w3[unassigned]
-        inside_mask[rr, cc] = True
-        face_map[rr, cc] = fi_local
-        bary_weights[rr, cc, 0] = w1.astype(np.float32)
-        bary_weights[rr, cc, 1] = w2.astype(np.float32)
-        bary_weights[rr, cc, 2] = w3.astype(np.float32)
-
     edge_loop = _patchedgeloop_longest(faces_valid)
     if edge_loop.size >= 3:
         poly = viewvert[edge_loop, :2]
@@ -443,54 +284,10 @@ def generate_flat_lookup(
         ).reshape((h, w))
         inside_mask = inside_poly
     else:
-        inside_mask = ndi.binary_fill_holes(inside_mask)
+        inside_mask = ~extrapmask
 
     extrapmask = extrapmask | (~inside_mask)
     imglookup[extrapmask] = 0
-
-    if mask_high_area_pixels and faces_valid.shape[0] > 0:
-        fv = viewvert[faces_valid]
-        area2 = np.abs(
-            (fv[:, 1, 0] - fv[:, 0, 0]) * (fv[:, 2, 1] - fv[:, 0, 1])
-            - (fv[:, 1, 1] - fv[:, 0, 1]) * (fv[:, 2, 0] - fv[:, 0, 0])
-        ) / 2.0
-        q = np.clip(prune_quantile, 80.0, 100.0)
-        area_thr = np.percentile(area2, q) * max(prune_factor, 1.0)
-        if np.isfinite(area_thr) and area_thr > 0:
-            valid_face_pix = face_map >= 0
-            bad_pix = np.zeros_like(extrapmask)
-            bad_pix[valid_face_pix] = (
-                area2[face_map[valid_face_pix]] > area_thr
-            )
-            extrapmask = extrapmask | bad_pix
-            imglookup[extrapmask] = 0
-
-    if apply_support_mask:
-        # Mark pixels far from any patch vertex as extrapolated.
-        # This suppresses large fan artifacts in sparse boundary regions.
-        vert_px = np.c_[px[flatmask], py[flatmask]]
-        if vert_px.shape[0] > 0:
-            tree = cKDTree(vert_px)
-            pix_y, pix_x = np.nonzero(inside_mask)
-            if pix_x.size > 0:
-                q = np.c_[pix_x.astype(float), pix_y.astype(float)]
-                dist, _ = tree.query(q, k=1)
-                med = float(np.median(dist))
-                if med > 0:
-                    far = dist > (support_ratio * med)
-                    if np.any(far):
-                        fy = pix_y[far]
-                        fx = pix_x[far]
-                        extrapmask[fy, fx] = True
-                        imglookup[fy, fx] = 0
-
-    extrapmask, imglookup, face_map, bary_weights = _fill_small_extrap_holes(
-        extrapmask,
-        imglookup,
-        max_hole_px=fill_small_holes_px,
-        bary_face=face_map,
-        bary_weights=bary_weights,
-    )
 
     lookupmasks = np.zeros((verts.shape[0],), dtype=bool)
     if np.any(~extrapmask):
@@ -539,9 +336,6 @@ def generate_flat_lookup(
 
     return {
         "imglookup": imglookup,
-        "bary_face": face_map,
-        "bary_faces": faces_valid.astype(np.int64),
-        "bary_weights": bary_weights,
         "vertmasks": viewmask,
         "lookupmasks": lookupmasks,
         "reverselookup": reverselookup,

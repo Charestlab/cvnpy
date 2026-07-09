@@ -18,6 +18,7 @@ Documentation: <https://cvnpy.readthedocs.io/>
 - optional colorbar
 - optional bilateral inflated insets
 - layered SVG output with stable object IDs
+- MATLAB-parity nearest-neighbor vertex-to-image mapping for flatmaps
 
 ## Repository Layout
 

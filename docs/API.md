@@ -64,15 +64,11 @@ Caching:
 - `cache_dir`
 
 Flatmap controls:
-- `flat_apply_support_mask`
-- `flat_support_ratio`
-- `trim_extrapolation_px`
-- `flat_filter_sparse_vertices`
-- `flat_sparse_vertex_quantile`
-- `flat_sparse_vertex_factor`
-- `flat_edge_trim_steps`
 - `flat_margin_frac`
-- `flat_fill_small_holes_px`
+
+`flat_margin_frac` is padding around the patch view. It is not an artifact filter.
+
+The flatmap value path is nearest-neighbor by design and matches MATLAB `spherelookup_vert2image.m`.
 
 ## Minimal API Example
 
@@ -91,6 +87,12 @@ mapped, lk, rgb, opts = lookup(
     cache_dir="/tmp/cvnpy_cache",
 )
 ```
+
+## Example Figure
+
+The example demos can export publication-style PNG and layered SVG outputs:
+
+![Example bilateral flatmap](assets/mid_pred_flatmap.png)
 
 ## Viewpoint Helper
 

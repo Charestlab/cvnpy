@@ -46,35 +46,6 @@ def _triangle_face_area(vertices: np.ndarray, faces: np.ndarray) -> np.ndarray:
     return 0.5 * np.linalg.norm(cross, axis=1)
 
 
-def _clean_flat_faces_by_edge(
-    vertices: np.ndarray, faces: np.ndarray, max_ratio: float = 2.2
-) -> tuple[np.ndarray, np.ndarray]:
-    """Prune outlier long-edge triangles from flat patches."""
-    if faces.shape[0] == 0:
-        patchmask = np.zeros((vertices.shape[0],), dtype=bool)
-        return faces, patchmask
-
-    p1 = vertices[faces[:, 0], :]
-    p2 = vertices[faces[:, 1], :]
-    p3 = vertices[faces[:, 2], :]
-    l12 = np.linalg.norm(p1 - p2, axis=1)
-    l23 = np.linalg.norm(p2 - p3, axis=1)
-    l31 = np.linalg.norm(p3 - p1, axis=1)
-    max_edge = np.maximum(l12, np.maximum(l23, l31))
-
-    med = float(np.median(max_edge))
-    if med <= 0:
-        keep = np.ones((faces.shape[0],), dtype=bool)
-    else:
-        keep = max_edge <= (max_ratio * med)
-    faces2 = faces[keep, :]
-
-    patchmask = np.zeros((vertices.shape[0],), dtype=bool)
-    if faces2.shape[0] > 0:
-        patchmask[np.unique(faces2.ravel())] = True
-    return faces2, patchmask
-
-
 def _patchedgeloop_longest(faces: np.ndarray) -> np.ndarray:
     """Port of MATLAB patchedgeloop(..., true)."""
     if faces.shape[0] == 0:
@@ -270,7 +241,6 @@ def _read_one_surface(
     surfsuffix: str,
     justcount: bool,
     noscale: bool,
-    flat_edge_trim_steps: int,
 ) -> Surface | int:
     suffix_file = _suffix_file(surfsuffix)
     is_patch = ".patch." in surftype
@@ -335,20 +305,6 @@ def _read_one_surface(
         faces = faces[np.all(patchmask[faces], axis=1), :]
         verts[pv, :] = np.c_[p["x"][valid], p["y"][valid], p["z"][valid]]
 
-        if ".flat." in surftype and flat_edge_trim_steps > 0 and p["edge"].size > 0:
-            edge_valid = p["edge"][(p["edge"] >= 0) & (p["edge"] < verts.shape[0])]
-            bad = np.zeros((verts.shape[0],), dtype=bool)
-            bad[edge_valid] = True
-            for _ in range(int(flat_edge_trim_steps)):
-                bad_face = np.any(bad[faces], axis=1)
-                if not np.any(bad_face):
-                    break
-                bad[np.unique(faces[bad_face].ravel())] = True
-            faces = faces[~np.any(bad[faces], axis=1), :]
-            patchmask = np.zeros((verts.shape[0],), dtype=bool)
-            if faces.shape[0] > 0:
-                patchmask[np.unique(faces.ravel())] = True
-
         if ".flat." in surftype:
             # MATLAB-like cleanup pass.
             faces, patchmask = _clean_flat_patch_polygon(faces, verts, max_iter=10)
@@ -382,7 +338,6 @@ def read_surface(
     justcount = bool(kwargs.get("justcount", False))
     surfdir_arg = kwargs.get("surfdir")
     noscale = bool(kwargs.get("noscale", False))
-    flat_edge_trim_steps = int(kwargs.get("flat_edge_trim_steps", 0))
 
     surfdir = _resolve_surfdir(subject, surfdir_arg if isinstance(surfdir_arg, str) else None)
 
@@ -398,7 +353,6 @@ def read_surface(
             surfsuffix,
             justcount,
             noscale,
-            flat_edge_trim_steps,
         )
         for h in hemis
     ]

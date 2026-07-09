@@ -6,6 +6,16 @@ File: `/Users/iancharest/Documents/codex/cvncode/cvnpy/examples/flatmap_demo.py`
 
 `flatmap_demo.py` renders cortical flatmaps with optional stat overlays, thresholding, colorbar, bilateral composition, inflated insets, and layered SVG output.
 
+## Example Output
+
+Statistical map with bilateral flatmaps, colorbar, and inflated insets:
+
+![Example bilateral flatmap](assets/mid_pred_flatmap.png)
+
+Another layer rendered with the same shared color limits:
+
+![Example stem layer flatmap](assets/stem_1_gap_flatmap.png)
+
 ## Common Commands
 
 ### Flatmap, both hemispheres
@@ -70,6 +80,7 @@ File: `/Users/iancharest/Documents/codex/cvncode/cvnpy/examples/flatmap_demo.py`
 - `--absthreshold <float>`
 - `--background <metric-or-scalar>` (default `curv`)
 - `--show-colorbar/--no-show-colorbar`
+- `--flat-margin-frac` (default `0.04`; increases/decreases flatmap padding)
 
 Threshold behavior:
 - pixels with `abs(value) <= absthreshold` render background curvature (gray)
@@ -79,14 +90,18 @@ Threshold behavior:
 
 When `--hemi both`:
 - LH and RH are independently rendered, rotated, trimmed, then composed side-by-side
-- defaults:
-  - `--lh-rotate-deg -90`
-  - `--rh-rotate-deg 90`
 
 Useful controls:
 - `--pair-gap-px`
 - `--pair-margin-px`
 - `--pair-bg-gray` (for white figure use `1.0`)
+- `--lh-rotate-deg`
+- `--rh-rotate-deg`
+- `--rh-flip-lr/--no-rh-flip-lr`
+
+Rotation conventions:
+- positive degrees use NumPy's counterclockwise `rot90` direction
+- negative degrees rotate clockwise
 
 ## Insets
 
@@ -98,20 +113,16 @@ Useful controls:
 
 Insets are rendered from `surftype='inflated'` using the same stat values and color settings.
 
-## Flatmap Artifact Controls
+## Flatmap Geometry
 
-These are exposed for boundary/edge artifact tuning:
-- `--flat-support-ratio`
-- `--trim-extrapolation-px`
-- `--flat-prune-artifact-faces`
-- `--flat-prune-quantile`
-- `--flat-prune-factor`
-- `--flat-filter-sparse-vertices`
-- `--flat-sparse-vertex-quantile`
-- `--flat-sparse-vertex-factor`
-- `--flat-edge-trim-steps`
-- `--flat-margin-frac`
-- `--flat-fill-small-holes-px`
+The flatmap path intentionally follows Kendrick's MATLAB lookup strategy:
+- read the FreeSurfer patch on the full surface vertex index basis
+- clean the flat patch polygon
+- generate a nearest-neighbor image lookup
+- mask pixels outside the patch boundary
+- map vertex values with `Lookup.imglookup`
+
+There are no exposed artifact-pruning flags. If a surface produces boundary problems, the correct fix is to inspect the surface/patch inputs or the parity code, not to tune image-space artifact filters.
 
 ## SVG Layering
 

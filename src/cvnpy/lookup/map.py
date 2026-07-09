@@ -15,7 +15,8 @@ import numpy as np
 def vert_to_image(vertvalues: np.ndarray, lookup: dict, badval: float = 0.0) -> np.ndarray:
     """Map vertex values to image space.
 
-    Uses lookup['imglookup'] as nearest-neighbor vertex indices.
+    Uses lookup['imglookup'] as nearest-neighbor vertex indices, matching
+    Kendrick Kay's MATLAB spherelookup_vert2image.m.
     """
     vals = np.asarray(vertvalues)
     was_1d = vals.ndim == 1
@@ -32,44 +33,7 @@ def vert_to_image(vertvalues: np.ndarray, lookup: dict, badval: float = 0.0) -> 
         fullvals = fullvals.astype(float, copy=False)
 
     imglookup = np.asarray(lookup["imglookup"], dtype=np.int64)
-    bary_face = lookup.get("bary_face")
-    bary_faces = lookup.get("bary_faces")
-    bary_weights = lookup.get("bary_weights")
-    # MATLAB spherelookup_vert2image.m maps values with Lookup.imglookup
-    # directly. Barycentric fields are kept for optional experiments, but
-    # default rendering must remain nearest-vertex for CVN parity.
-    use_barycentric = bool(lookup.get("use_barycentric", False))
-    use_bary = (
-        use_barycentric
-        and vals.shape[1] == 1
-        and bary_face is not None
-        and bary_faces is not None
-        and bary_weights is not None
-    )
-
-    if use_bary:
-        face_idx = np.asarray(bary_face, dtype=np.int64)
-        tri = np.asarray(bary_faces, dtype=np.int64)
-        wts = np.asarray(bary_weights, dtype=float)
-        nn_img = fullvals[imglookup, :]
-        img = np.full(
-            (imglookup.shape[0], imglookup.shape[1], fullvals.shape[1]),
-            float(badval),
-            dtype=fullvals.dtype if np.issubdtype(fullvals.dtype, np.floating) else float,
-        )
-        valid = face_idx >= 0
-        if np.any(valid):
-            f = tri[face_idx[valid]]
-            wt = wts[valid]
-            v0 = fullvals[f[:, 0], :]
-            v1 = fullvals[f[:, 1], :]
-            v2 = fullvals[f[:, 2], :]
-            pix = v0 * wt[:, [0]] + v1 * wt[:, [1]] + v2 * wt[:, [2]]
-            img[valid, :] = pix
-        if np.any(~valid):
-            img[~valid, :] = nn_img[~valid, :]
-    else:
-        img = fullvals[imglookup, :]
+    img = fullvals[imglookup, :]
 
     extrapmask = np.asarray(lookup.get("extrapmask", np.zeros_like(imglookup, dtype=bool)))
     if bool(lookup.get("is_extrapolated", False)):

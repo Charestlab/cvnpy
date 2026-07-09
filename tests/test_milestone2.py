@@ -95,35 +95,16 @@ def test_map_roundtrip_with_handcrafted_lookup() -> None:
     assert np.allclose(back, vals)
 
 
-def test_vert_to_image_defaults_to_nearest_lookup_even_when_barycentric_present() -> None:
+def test_vert_to_image_uses_nearest_lookup() -> None:
     lookup = {
         "imglookup": np.array([[0]], dtype=np.int64),
         "extrapmask": np.array([[False]], dtype=bool),
         "is_extrapolated": False,
-        "bary_face": np.array([[0]], dtype=np.int64),
-        "bary_faces": np.array([[0, 1, 2]], dtype=np.int64),
-        "bary_weights": np.array([[[0.2, 0.3, 0.5]]], dtype=np.float32),
     }
     vals = np.array([10.0, 20.0, 40.0], dtype=float)
     img = vert_to_image(vals, lookup, badval=np.nan)
     assert img.shape == (1, 1)
     assert np.isclose(img[0, 0], 10.0)
-
-
-def test_vert_to_image_uses_barycentric_lookup_when_explicitly_enabled() -> None:
-    lookup = {
-        "imglookup": np.array([[0]], dtype=np.int64),
-        "extrapmask": np.array([[False]], dtype=bool),
-        "is_extrapolated": False,
-        "use_barycentric": True,
-        "bary_face": np.array([[0]], dtype=np.int64),
-        "bary_faces": np.array([[0, 1, 2]], dtype=np.int64),
-        "bary_weights": np.array([[[0.2, 0.3, 0.5]]], dtype=np.float32),
-    }
-    vals = np.array([10.0, 20.0, 40.0], dtype=float)
-    img = vert_to_image(vals, lookup, badval=np.nan)
-    assert img.shape == (1, 1)
-    assert np.isclose(img[0, 0], 0.2 * 10.0 + 0.3 * 20.0 + 0.5 * 40.0)
 
 
 def test_lookup_images_sphere_integration(tmp_path: Path, monkeypatch: object) -> None:

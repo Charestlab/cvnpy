@@ -774,82 +774,10 @@ def main() -> None:
     parser.add_argument("--cache-dir", default=None)
     parser.add_argument("--no-cache", action="store_true")
     parser.add_argument(
-        "--flat-support-ratio",
-        type=float,
-        default=2.5,
-        help="Lower values mask more sparse boundary pixels (reduces fan artifacts).",
-    )
-    parser.add_argument(
-        "--flat-apply-support-mask",
-        action=argparse.BooleanOptionalAction,
-        default=False,
-        help="Enable distance-based support masking near sparse patch regions.",
-    )
-    parser.add_argument(
-        "--trim-extrapolation-px",
-        type=int,
-        default=0,
-        help="Trim this many pixels around extrapolated boundary regions.",
-    )
-    parser.add_argument(
-        "--flat-prune-artifact-faces",
-        action=argparse.BooleanOptionalAction,
-        default=False,
-        help="Prune outlier flat triangles that cause fan artifacts.",
-    )
-    parser.add_argument(
-        "--flat-prune-quantile",
-        type=float,
-        default=99.0,
-        help="Quantile used for flat face outlier thresholds.",
-    )
-    parser.add_argument(
-        "--flat-prune-factor",
-        type=float,
-        default=1.5,
-        help="Multiplier on quantile thresholds for flat face pruning.",
-    )
-    parser.add_argument(
-        "--flat-filter-sparse-vertices",
-        action=argparse.BooleanOptionalAction,
-        default=False,
-        help="Filter low-density flat vertices before interpolation.",
-    )
-    parser.add_argument(
-        "--flat-mask-high-area-pixels",
-        action=argparse.BooleanOptionalAction,
-        default=False,
-        help="Mask pixels belonging to unusually large projected triangles.",
-    )
-    parser.add_argument(
-        "--flat-sparse-vertex-quantile",
-        type=float,
-        default=95.0,
-        help="Quantile for sparse-vertex filtering.",
-    )
-    parser.add_argument(
-        "--flat-sparse-vertex-factor",
-        type=float,
-        default=1.2,
-        help="Multiplier on sparse-vertex quantile threshold.",
-    )
-    parser.add_argument(
-        "--flat-edge-trim-steps",
-        type=int,
-        default=0,
-        help="Remove faces within N adjacency steps of patch edge vertices.",
-    )
-    parser.add_argument(
         "--flat-margin-frac",
         type=float,
         default=0.04,
         help="Fractional XY padding so map does not touch PNG borders (e.g., 0.04).",
-    )
-    parser.add_argument(
-        "--flat-fill-small-holes-px",
-        type=int,
-        default=0,
-        help="Fill internal extrapolated holes up to this pixel area.",
     )
     parser.add_argument(
         "--pair-gap-px",
@@ -878,13 +806,13 @@ def main() -> None:
     parser.add_argument(
         "--lh-rotate-deg",
         type=int,
-        default=-90,
+        default=0,
         help="Rotation for LH image in degrees (clockwise is negative).",
     )
     parser.add_argument(
         "--rh-rotate-deg",
         type=int,
-        default=90,
+        default=0,
         help="Rotation for RH image in degrees (counterclockwise is positive).",
     )
     parser.add_argument(
@@ -929,19 +857,7 @@ def main() -> None:
         savelookup=not args.no_cache,
         reset=bool(args.no_cache),
         surfdir=surfdir,
-        flat_support_ratio=float(args.flat_support_ratio),
-        flat_apply_support_mask=bool(args.flat_apply_support_mask),
-        trim_extrapolation_px=int(args.trim_extrapolation_px),
-        prune_artifact_faces=bool(args.flat_prune_artifact_faces),
-        prune_quantile=float(args.flat_prune_quantile),
-        prune_factor=float(args.flat_prune_factor),
-        flat_mask_high_area_pixels=bool(args.flat_mask_high_area_pixels),
-        flat_filter_sparse_vertices=bool(args.flat_filter_sparse_vertices),
-        flat_sparse_vertex_quantile=float(args.flat_sparse_vertex_quantile),
-        flat_sparse_vertex_factor=float(args.flat_sparse_vertex_factor),
-        flat_edge_trim_steps=int(args.flat_edge_trim_steps),
         flat_margin_frac=float(args.flat_margin_frac),
-        flat_fill_small_holes_px=int(args.flat_fill_small_holes_px),
         absthreshold=args.absthreshold,
         bg_cmap="gray",
         bg_clim=(-1.0, 2.0),

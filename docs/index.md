@@ -10,6 +10,10 @@
 - Export layered SVGs with independent objects for curvature, stats, ROIs, labels, colorbars, and insets.
 - Batch-render model-layer results for publication figures.
 
+## Example
+
+![cvnpy bilateral flatmap example](assets/mid_pred_flatmap.png)
+
 ## Install
 
 ```bash
