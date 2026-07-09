@@ -12,9 +12,9 @@ Statistical map with bilateral flatmaps, colorbar, and inflated insets:
 
 ![Example bilateral flatmap](assets/mid_pred_flatmap.png)
 
-Another layer rendered with the same shared color limits:
+Thresholded simulated noise map. Values with `abs(value) <= 0.10` show the curvature background; sparse suprathreshold values use `cmapsign4`:
 
-![Example stem layer flatmap](assets/stem_1_gap_flatmap.png)
+![Thresholded simulated noise flatmap](assets/simulated_threshold_flatmap.png)
 
 ## Common Commands
 
