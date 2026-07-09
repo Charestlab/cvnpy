@@ -4,27 +4,28 @@
 
 ```bash
 python3 -m venv .venv
-.venv/bin/python -m pip install --upgrade pip
-.venv/bin/python -m pip install -e ".[dev,docs]"
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -e ".[dev,docs]"
 ```
 
 ## Test
 
 ```bash
-.venv/bin/ruff check src examples tests
-.venv/bin/python -m pytest -q
+ruff check src examples tests
+python -m pytest -q
 ```
 
 ## Build Docs
 
 ```bash
-.venv/bin/mkdocs build
+mkdocs build
 ```
 
 ## Build Package
 
 ```bash
-.venv/bin/python -m build
+python -m build
 ```
 
 ## Publish

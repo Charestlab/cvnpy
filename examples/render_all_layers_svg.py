@@ -1,4 +1,4 @@
-"""Batch-render CorticoSemantic layer flatmaps as SVG using shared symmetric color limits.
+"""Batch-render layer-wise flatmaps as SVG using shared symmetric color limits.
 
 This script:
 1) discovers all layer `test_corr.npy` files under an encoding-subject directory,
@@ -180,7 +180,7 @@ def main() -> None:
     parser.add_argument(
         "--encoding-dir",
         required=True,
-        help="Path like /path/to/encoding/subj01 containing layer folders.",
+        help="Directory containing one subfolder per layer/result.",
     )
     parser.add_argument(
         "--subject-dir",

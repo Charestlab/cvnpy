@@ -39,20 +39,18 @@ From PyPI:
 python -m pip install cvnpy
 ```
 
-For local development:
+To run the example scripts from this repository:
 
 ```bash
 git clone https://github.com/Charestlab/cvnpy.git
 cd cvnpy
-python3 -m venv .venv
-.venv/bin/python -m pip install --upgrade pip setuptools wheel
-.venv/bin/python -m pip install -e '.[dev]'
+python -m pip install -e ".[dev,docs]"
 ```
 
-Run tests:
+For development and tests:
 
 ```bash
-.venv/bin/python -m pytest -q
+python -m pytest -q
 ```
 
 ## Data Setup
@@ -62,7 +60,7 @@ Run tests:
 ### Option A: Use `SUBJECTS_DIR`
 
 ```bash
-export SUBJECTS_DIR=/Applications/freesurfer/8.2.0/subjects
+export SUBJECTS_DIR=/path/to/freesurfer/subjects
 ```
 
 Then pass `--subject fsaverage` (or your subject name).
@@ -92,7 +90,7 @@ This expects:
 ### 1) Flatmap (single hemi)
 
 ```bash
-.venv/bin/python examples/flatmap_demo.py \
+python examples/flatmap_demo.py \
   --subject-dir /path/to/nsd_fsaverage \
   --hemi lh \
   --surftype full.flat.patch.3d \
@@ -104,7 +102,7 @@ This expects:
 ### 2) Flatmap (both hemispheres, production defaults)
 
 ```bash
-.venv/bin/python examples/flatmap_demo.py \
+python examples/flatmap_demo.py \
   --subject-dir /path/to/nsd_fsaverage \
   --hemi both \
   --surftype full.flat.patch.3d \
@@ -116,42 +114,42 @@ This expects:
 ### 3) Stat-map overlay from `.npy`
 
 ```bash
-.venv/bin/python examples/flatmap_demo.py \
+python examples/flatmap_demo.py \
   --subject-dir /path/to/nsd_fsaverage \
   --hemi both \
   --surftype full.flat.patch.3d \
-  --stat-file /path/to/encoding/subj01/shared_pred/test_corr.npy \
+  --stat-file /path/to/stats/test_corr.npy \
   --symmetric-clim \
   --absthreshold 0.05 \
   --show-colorbar \
   --cache-dir /tmp/cvnpy_cache \
-  --out out/subj01_corr_bihemi.png
+  --out out/corr_bihemi.png
 ```
 
 ### 4) Add inflated insets
 
 ```bash
-.venv/bin/python examples/flatmap_demo.py \
+python examples/flatmap_demo.py \
   --subject-dir /path/to/nsd_fsaverage \
   --hemi both \
-  --stat-file /path/to/encoding/subj01/shared_pred/test_corr.npy \
+  --stat-file /path/to/stats/test_corr.npy \
   --absthreshold 0.05 \
   --show-colorbar \
   --show-insets \
   --inset-viewname lateral \
-  --out out/subj01_corr_bihemi_insets.png
+  --out out/corr_bihemi_insets.png
 ```
 
 ### 5) Layered SVG export
 
 ```bash
-.venv/bin/python examples/flatmap_demo.py \
+python examples/flatmap_demo.py \
   --subject-dir /path/to/nsd_fsaverage \
   --hemi both \
-  --stat-file /path/to/encoding/subj01/shared_pred/test_corr.npy \
+  --stat-file /path/to/stats/test_corr.npy \
   --show-colorbar \
-  --out out/subj01_corr_bihemi.png \
-  --out-svg out/subj01_corr_bihemi.svg
+  --out out/corr_bihemi.png \
+  --out-svg out/corr_bihemi.svg
 ```
 
 ## Layered SVG IDs
@@ -187,7 +185,7 @@ You can override with `--cmap`.
 ## Known Limitations
 
 - Exact pixel-perfect parity with MATLAB outputs is still in progress.
-- Public release requires final confirmation of GitHub organization, PyPI Trusted Publishing setup, and upstream license compatibility.
+- `cvnpy` does not ship FreeSurfer/NSD/CVN surface files; users must provide compatible subject data.
 
 ## Citation / Attribution
 

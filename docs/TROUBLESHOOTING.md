@@ -15,7 +15,7 @@ Fix:
 ## 2) FreeSurfer install is read-only (cache write failures)
 
 Symptom:
-- caching under `/Applications/.../surf/imglookup` fails silently or cannot write
+- caching under a system-managed FreeSurfer subject directory fails or cannot write
 
 Fix:
 - pass `--cache-dir /tmp/cvnpy_cache`

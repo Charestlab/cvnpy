@@ -49,4 +49,4 @@ This file tracks where core CVN MATLAB responsibilities currently live in `cvnpy
 
 - Pixel-perfect MATLAB parity is not guaranteed for every subject/view.
 - Additional parity tests against MATLAB goldens are still needed.
-- Packaging/release docs for public distribution are not finalized.
+- `cvnpy` requires user-supplied FreeSurfer-compatible surface data.

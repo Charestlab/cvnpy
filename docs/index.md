@@ -17,14 +17,15 @@
 ## Install
 
 ```bash
-pip install cvnpy
+python -m pip install cvnpy
 ```
 
-For development:
+The example scripts used in this documentation live in the GitHub repository. To run them directly:
 
 ```bash
-python3 -m venv .venv
-.venv/bin/python -m pip install -e ".[dev,docs]"
+git clone https://github.com/Charestlab/cvnpy.git
+cd cvnpy
+python -m pip install -e ".[dev,docs]"
 ```
 
 ## Data
@@ -32,7 +33,7 @@ python3 -m venv .venv
 `cvnpy` does not ship cortical surface data. Provide a FreeSurfer-style subject directory with a `surf/` folder, such as an NSD fsaverage derivative.
 
 ```bash
-examples/flatmap_demo.py \
+python examples/flatmap_demo.py \
   --subject-dir /path/to/nsd_fsaverage \
   --hemi both \
   --surftype full.flat.patch.3d \

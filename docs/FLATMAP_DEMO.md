@@ -21,7 +21,7 @@ Thresholded simulated noise map. Values with `abs(value) <= 0.10` show the curva
 ### Flatmap, both hemispheres
 
 ```bash
-.venv/bin/python examples/flatmap_demo.py \
+python examples/flatmap_demo.py \
   --subject-dir /path/to/nsd_fsaverage \
   --hemi both \
   --surftype full.flat.patch.3d \
@@ -32,27 +32,27 @@ Thresholded simulated noise map. Values with `abs(value) <= 0.10` show the curva
 ### Real stat file, symmetric color limits, threshold
 
 ```bash
-.venv/bin/python examples/flatmap_demo.py \
+python examples/flatmap_demo.py \
   --subject-dir /path/to/nsd_fsaverage \
   --hemi both \
-  --stat-file /path/to/encoding/subj01/shared_pred/test_corr.npy \
+  --stat-file /path/to/stats/test_corr.npy \
   --symmetric-clim \
   --absthreshold 0.05 \
   --show-colorbar \
-  --out out/subj01_corr_thresh005.png
+  --out out/corr_thresh005.png
 ```
 
 ### Add insets + layered SVG
 
 ```bash
-.venv/bin/python examples/flatmap_demo.py \
+python examples/flatmap_demo.py \
   --subject-dir /path/to/nsd_fsaverage \
   --hemi both \
-  --stat-file /path/to/encoding/subj01/shared_pred/test_corr.npy \
+  --stat-file /path/to/stats/test_corr.npy \
   --show-colorbar \
   --show-insets \
-  --out out/subj01_corr_insets.png \
-  --out-svg out/subj01_corr_insets.svg
+  --out out/corr_insets.png \
+  --out-svg out/corr_insets.svg
 ```
 
 ## Inputs

@@ -8,12 +8,18 @@
 
 ## Installation
 
+For library use:
+
+```bash
+python -m pip install cvnpy
+```
+
+To run the example scripts from the documentation:
+
 ```bash
 git clone https://github.com/Charestlab/cvnpy.git
 cd cvnpy
-python3 -m venv .venv
-.venv/bin/python -m pip install --upgrade pip setuptools wheel
-.venv/bin/python -m pip install -e '.[dev]'
+python -m pip install -e ".[dev,docs]"
 ```
 
 ## Data Discovery Modes
@@ -23,14 +29,14 @@ You can provide surface data in one of two ways.
 ### 1) `SUBJECTS_DIR` + `--subject`
 
 ```bash
-export SUBJECTS_DIR=/Applications/freesurfer/8.2.0/subjects
-.venv/bin/python examples/inflated_demo.py --subject fsaverage --hemi lh --out out/lh_inflated.png
+export SUBJECTS_DIR=/path/to/freesurfer/subjects
+python examples/inflated_demo.py --subject fsaverage --hemi lh --out out/lh_inflated.png
 ```
 
 ### 2) `--subject-dir`
 
 ```bash
-.venv/bin/python examples/inflated_demo.py \
+python examples/inflated_demo.py \
   --subject-dir /path/to/nsd_fsaverage \
   --hemi lh \
   --out out/lh_inflated.png
@@ -53,7 +59,7 @@ Lookup generation is cached by default.
 ## Smoke Test
 
 ```bash
-.venv/bin/python examples/flatmap_demo.py \
+python examples/flatmap_demo.py \
   --subject-dir /path/to/nsd_fsaverage \
   --hemi lh \
   --out out/smoke_flat_lh.png

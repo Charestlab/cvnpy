@@ -9,7 +9,7 @@ File: `examples/inflated_demo.py`
 ## Basic Usage
 
 ```bash
-.venv/bin/python examples/inflated_demo.py \
+python examples/inflated_demo.py \
   --subject-dir /path/to/nsd_fsaverage \
   --hemi lh \
   --surftype inflated \
@@ -32,9 +32,9 @@ File: `examples/inflated_demo.py`
 ## Example with system FreeSurfer + writable cache
 
 ```bash
-.venv/bin/python examples/inflated_demo.py \
+python examples/inflated_demo.py \
   --subject fsaverage \
-  --subjects-dir /Applications/freesurfer/8.2.0/subjects \
+  --subjects-dir /path/to/freesurfer/subjects \
   --cache-dir /tmp/cvnpy_cache \
   --hemi rh \
   --out out/fsaverage_rh_inflated.png
