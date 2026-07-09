@@ -180,12 +180,12 @@ def main() -> None:
     parser.add_argument(
         "--encoding-dir",
         required=True,
-        help="Path like /Users/.../encoding/subj01 containing layer folders.",
+        help="Path like /path/to/encoding/subj01 containing layer folders.",
     )
     parser.add_argument(
         "--subject-dir",
         required=True,
-        help="Surface subject dir containing surf/ (e.g., /Users/.../nsd_fsaverage).",
+        help="Surface subject dir containing surf/ (e.g., /path/to/nsd_fsaverage).",
     )
     parser.add_argument(
         "--pattern",

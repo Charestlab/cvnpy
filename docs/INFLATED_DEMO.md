@@ -1,6 +1,6 @@
 # Inflated Demo Reference
 
-File: `/Users/iancharest/Documents/codex/cvncode/cvnpy/examples/inflated_demo.py`
+File: `examples/inflated_demo.py`
 
 ## Purpose
 
@@ -10,7 +10,7 @@ File: `/Users/iancharest/Documents/codex/cvncode/cvnpy/examples/inflated_demo.py
 
 ```bash
 .venv/bin/python examples/inflated_demo.py \
-  --subject-dir /Users/iancharest/data/nsd_fsaverage \
+  --subject-dir /path/to/nsd_fsaverage \
   --hemi lh \
   --surftype inflated \
   --viewname occip \

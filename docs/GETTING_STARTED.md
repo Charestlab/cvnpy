@@ -9,7 +9,8 @@
 ## Installation
 
 ```bash
-cd /Users/iancharest/Documents/codex/cvncode/cvnpy
+git clone https://github.com/Charestlab/cvnpy.git
+cd cvnpy
 python3 -m venv .venv
 .venv/bin/python -m pip install --upgrade pip setuptools wheel
 .venv/bin/python -m pip install -e '.[dev]'
@@ -30,7 +31,7 @@ export SUBJECTS_DIR=/Applications/freesurfer/8.2.0/subjects
 
 ```bash
 .venv/bin/python examples/inflated_demo.py \
-  --subject-dir /Users/iancharest/data/nsd_fsaverage \
+  --subject-dir /path/to/nsd_fsaverage \
   --hemi lh \
   --out out/lh_inflated.png
 ```
@@ -53,7 +54,7 @@ Lookup generation is cached by default.
 
 ```bash
 .venv/bin/python examples/flatmap_demo.py \
-  --subject-dir /Users/iancharest/data/nsd_fsaverage \
+  --subject-dir /path/to/nsd_fsaverage \
   --hemi lh \
   --out out/smoke_flat_lh.png
 ```

@@ -1,6 +1,6 @@
 # Flatmap Demo Reference
 
-File: `/Users/iancharest/Documents/codex/cvncode/cvnpy/examples/flatmap_demo.py`
+File: `examples/flatmap_demo.py`
 
 ## Purpose
 
@@ -22,7 +22,7 @@ Thresholded simulated noise map. Values with `abs(value) <= 0.10` show the curva
 
 ```bash
 .venv/bin/python examples/flatmap_demo.py \
-  --subject-dir /Users/iancharest/data/nsd_fsaverage \
+  --subject-dir /path/to/nsd_fsaverage \
   --hemi both \
   --surftype full.flat.patch.3d \
   --view 0,0,0 \
@@ -33,9 +33,9 @@ Thresholded simulated noise map. Values with `abs(value) <= 0.10` show the curva
 
 ```bash
 .venv/bin/python examples/flatmap_demo.py \
-  --subject-dir /Users/iancharest/data/nsd_fsaverage \
+  --subject-dir /path/to/nsd_fsaverage \
   --hemi both \
-  --stat-file /Users/iancharest/Downloads/rcnn-mpnet/encoding/subj01/shared_pred/test_corr.npy \
+  --stat-file /path/to/encoding/subj01/shared_pred/test_corr.npy \
   --symmetric-clim \
   --absthreshold 0.05 \
   --show-colorbar \
@@ -46,9 +46,9 @@ Thresholded simulated noise map. Values with `abs(value) <= 0.10` show the curva
 
 ```bash
 .venv/bin/python examples/flatmap_demo.py \
-  --subject-dir /Users/iancharest/data/nsd_fsaverage \
+  --subject-dir /path/to/nsd_fsaverage \
   --hemi both \
-  --stat-file /Users/iancharest/Downloads/rcnn-mpnet/encoding/subj01/shared_pred/test_corr.npy \
+  --stat-file /path/to/encoding/subj01/shared_pred/test_corr.npy \
   --show-colorbar \
   --show-insets \
   --out out/subj01_corr_insets.png \

@@ -4,7 +4,7 @@
 
 Primary user-facing entry point:
 
-- `cvnpy.lookup(...)` in `/Users/iancharest/Documents/codex/cvncode/cvnpy/src/cvnpy/api.py`
+- `cvnpy.lookup(...)` in `src/cvnpy/api.py`
 
 This is a thin wrapper around:
 - `cvnpy.core.lookup_images.lookup_images(...)`
@@ -96,7 +96,7 @@ The example demos can export publication-style PNG and layered SVG outputs:
 
 ## Viewpoint Helper
 
-Use `/Users/iancharest/Documents/codex/cvncode/cvnpy/src/cvnpy/view/viewpoints.py`:
+Use `src/cvnpy/view/viewpoints.py`:
 
 ```python
 from cvnpy.view.viewpoints import lookup_viewpoint

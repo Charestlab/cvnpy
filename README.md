@@ -33,7 +33,7 @@ Documentation: <https://cvnpy.readthedocs.io/>
 
 ## Install
 
-From PyPI, once the first release is published:
+From PyPI:
 
 ```bash
 python -m pip install cvnpy
@@ -42,7 +42,8 @@ python -m pip install cvnpy
 For local development:
 
 ```bash
-cd /Users/iancharest/Documents/codex/cvncode/cvnpy
+git clone https://github.com/Charestlab/cvnpy.git
+cd cvnpy
 python3 -m venv .venv
 .venv/bin/python -m pip install --upgrade pip setuptools wheel
 .venv/bin/python -m pip install -e '.[dev]'
@@ -69,13 +70,13 @@ Then pass `--subject fsaverage` (or your subject name).
 ### Option B: Use explicit subject directory
 
 ```bash
---subject-dir /Users/iancharest/data/nsd_fsaverage
+--subject-dir /path/to/nsd_fsaverage
 ```
 
 This expects:
 
 ```text
-/Users/iancharest/data/nsd_fsaverage/
+/path/to/nsd_fsaverage/
   surf/
     lh.full.flat.patch.3d
     rh.full.flat.patch.3d
@@ -92,7 +93,7 @@ This expects:
 
 ```bash
 .venv/bin/python examples/flatmap_demo.py \
-  --subject-dir /Users/iancharest/data/nsd_fsaverage \
+  --subject-dir /path/to/nsd_fsaverage \
   --hemi lh \
   --surftype full.flat.patch.3d \
   --view 0,0,0 \
@@ -104,7 +105,7 @@ This expects:
 
 ```bash
 .venv/bin/python examples/flatmap_demo.py \
-  --subject-dir /Users/iancharest/data/nsd_fsaverage \
+  --subject-dir /path/to/nsd_fsaverage \
   --hemi both \
   --surftype full.flat.patch.3d \
   --view 0,0,0 \
@@ -116,10 +117,10 @@ This expects:
 
 ```bash
 .venv/bin/python examples/flatmap_demo.py \
-  --subject-dir /Users/iancharest/data/nsd_fsaverage \
+  --subject-dir /path/to/nsd_fsaverage \
   --hemi both \
   --surftype full.flat.patch.3d \
-  --stat-file /Users/iancharest/Downloads/rcnn-mpnet/encoding/subj01/shared_pred/test_corr.npy \
+  --stat-file /path/to/encoding/subj01/shared_pred/test_corr.npy \
   --symmetric-clim \
   --absthreshold 0.05 \
   --show-colorbar \
@@ -131,9 +132,9 @@ This expects:
 
 ```bash
 .venv/bin/python examples/flatmap_demo.py \
-  --subject-dir /Users/iancharest/data/nsd_fsaverage \
+  --subject-dir /path/to/nsd_fsaverage \
   --hemi both \
-  --stat-file /Users/iancharest/Downloads/rcnn-mpnet/encoding/subj01/shared_pred/test_corr.npy \
+  --stat-file /path/to/encoding/subj01/shared_pred/test_corr.npy \
   --absthreshold 0.05 \
   --show-colorbar \
   --show-insets \
@@ -145,9 +146,9 @@ This expects:
 
 ```bash
 .venv/bin/python examples/flatmap_demo.py \
-  --subject-dir /Users/iancharest/data/nsd_fsaverage \
+  --subject-dir /path/to/nsd_fsaverage \
   --hemi both \
-  --stat-file /Users/iancharest/Downloads/rcnn-mpnet/encoding/subj01/shared_pred/test_corr.npy \
+  --stat-file /path/to/encoding/subj01/shared_pred/test_corr.npy \
   --show-colorbar \
   --out out/subj01_corr_bihemi.png \
   --out-svg out/subj01_corr_bihemi.svg
