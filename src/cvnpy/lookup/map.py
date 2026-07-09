@@ -35,7 +35,10 @@ def vert_to_image(vertvalues: np.ndarray, lookup: dict, badval: float = 0.0) -> 
     bary_face = lookup.get("bary_face")
     bary_faces = lookup.get("bary_faces")
     bary_weights = lookup.get("bary_weights")
-    use_barycentric = bool(lookup.get("use_barycentric", True))
+    # MATLAB spherelookup_vert2image.m maps values with Lookup.imglookup
+    # directly. Barycentric fields are kept for optional experiments, but
+    # default rendering must remain nearest-vertex for CVN parity.
+    use_barycentric = bool(lookup.get("use_barycentric", False))
     use_bary = (
         use_barycentric
         and vals.shape[1] == 1

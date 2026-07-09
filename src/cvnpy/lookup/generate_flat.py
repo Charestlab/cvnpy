@@ -395,7 +395,6 @@ def generate_flat_lookup(
     sy = (w - 1) / (yview[1] - yview[0])
     px = (viewvert[:, 0] - xview[0]) * sx
     py = (viewvert[:, 1] - yview[0]) * sy
-    py = (w - 1) - py  # row index coordinates
 
     inside_mask = np.zeros((h, w), dtype=bool)
     face_map = np.full((h, w), -1, dtype=np.int64)
@@ -406,13 +405,13 @@ def generate_flat_lookup(
             dtype=float,
         )
         rr, cc = polygon(
-            tri_px[:, 1],
             tri_px[:, 0],
+            tri_px[:, 1],
             shape=(h, w),
         )
         if rr.size == 0:
             continue
-        w1, w2, w3 = _barycentric(cc.astype(float), rr.astype(float), tri_px)
+        w1, w2, w3 = _barycentric(rr.astype(float), cc.astype(float), tri_px)
         valid = (w1 >= -1e-5) & (w2 >= -1e-5) & (w3 >= -1e-5)
         if not np.any(valid):
             continue
