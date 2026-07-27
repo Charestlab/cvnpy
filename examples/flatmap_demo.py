@@ -174,7 +174,11 @@ def _compose_side_by_side(
 ) -> np.ndarray:
     h = max(left.shape[0], right.shape[0]) + 2 * margin_px
     w = left.shape[1] + gap_px + right.shape[1] + 2 * margin_px + max(0, int(rh_shift_px))
-    out = np.full((h, w, 3), float(bg_gray), dtype=float)
+    channels = left.shape[2] if left.ndim == 3 else 1
+    fill = [float(bg_gray)] * channels
+    if channels == 4:
+        fill[3] = 0.0
+    out = np.full((h, w, channels), fill, dtype=float)
     y0_left = (h - left.shape[0]) // 2
     y0_right = (h - right.shape[0]) // 2
     x0 = margin_px
@@ -184,22 +188,43 @@ def _compose_side_by_side(
     return out
 
 
-def _trim_to_content(img: np.ndarray, bg_gray: float, tol: float = 1e-6) -> np.ndarray:
-    bg = float(bg_gray)
-    content = np.any(np.abs(img - bg) > tol, axis=2)
+def _alpha_bbox(alpha: np.ndarray, tol: float = 1e-6) -> tuple[int, int, int, int]:
+    content = np.asarray(alpha, dtype=float) > tol
     ys, xs = np.nonzero(content)
     if ys.size == 0 or xs.size == 0:
-        return img
-    return img[ys.min() : ys.max() + 1, xs.min() : xs.max() + 1, :]
-
-
-def _content_bbox(img: np.ndarray, bg_gray: float, tol: float = 1e-6) -> tuple[int, int, int, int]:
-    bg = float(bg_gray)
-    content = np.any(np.abs(img - bg) > tol, axis=2)
-    ys, xs = np.nonzero(content)
-    if ys.size == 0 or xs.size == 0:
-        return 0, img.shape[0], 0, img.shape[1]
+        return 0, alpha.shape[0], 0, alpha.shape[1]
     return int(ys.min()), int(ys.max() + 1), int(xs.min()), int(xs.max() + 1)
+
+
+def _lookup_alpha(lookup: dict) -> np.ndarray:
+    imglookup = np.asarray(lookup["imglookup"])
+    extrapmask = np.asarray(lookup.get("extrapmask", np.zeros_like(imglookup, dtype=bool)))
+    return (~extrapmask).astype(float)
+
+
+def _composite_rgba(
+    curv_rgb: np.ndarray,
+    curv_alpha: np.ndarray,
+    stat_rgb: np.ndarray,
+    stat_alpha: np.ndarray,
+) -> np.ndarray:
+    ca = np.clip(np.asarray(curv_alpha, dtype=float), 0.0, 1.0)
+    sa = np.clip(np.asarray(stat_alpha, dtype=float), 0.0, 1.0) * ca
+    curv = np.clip(np.asarray(curv_rgb, dtype=float), 0.0, 1.0)
+    stat = np.clip(np.asarray(stat_rgb, dtype=float), 0.0, 1.0)
+    rgb = (1.0 - sa[:, :, None]) * curv + sa[:, :, None] * stat
+    return np.dstack([rgb, ca])
+
+
+def _rgb_with_alpha(rgb: np.ndarray, alpha: np.ndarray) -> np.ndarray:
+    return np.dstack(
+        [np.clip(np.asarray(rgb, dtype=float), 0.0, 1.0), np.clip(alpha, 0.0, 1.0)]
+    )
+
+
+def _crop_rgba_to_alpha(rgba: np.ndarray, tol: float = 1e-6) -> np.ndarray:
+    y0, y1, x0, x1 = _alpha_bbox(rgba[:, :, 3], tol=tol)
+    return rgba[y0:y1, x0:x1, :]
 
 
 def _compose_side_by_side_layers(
@@ -296,7 +321,7 @@ def _resolve_mpl_cmap(name: str) -> object:
 
 def _render_and_save(
     out: Path,
-    rgb: np.ndarray,
+    rgba: np.ndarray,
     show_colorbar: bool,
     cmap_name: str,
     clim: tuple[float, float],
@@ -306,19 +331,20 @@ def _render_and_save(
     inset_margin_px: int = 14,
 ) -> None:
     if (not show_colorbar) and inset_lh is None and inset_rh is None:
-        plt.imsave(out, np.clip(rgb, 0.0, 1.0))
+        plt.imsave(out, np.clip(rgba, 0.0, 1.0))
         return
 
-    h, w = rgb.shape[:2]
+    h, w = rgba.shape[:2]
     dpi = 100.0
-    fig = plt.figure(figsize=(w / dpi, h / dpi), dpi=dpi, facecolor="white")
+    fig = plt.figure(figsize=(w / dpi, h / dpi), dpi=dpi, facecolor="none")
     ax = fig.add_axes([0.0, 0.08, 1.0, 0.92])
-    ax.imshow(np.clip(rgb, 0.0, 1.0), interpolation="nearest")
+    ax.patch.set_alpha(0.0)
+    ax.imshow(np.clip(rgba, 0.0, 1.0), interpolation="nearest")
     ax.axis("off")
 
     _draw_bottom_insets(
         fig=fig,
-        base_shape=rgb.shape,
+        base_shape=rgba.shape,
         main_rect=(0.0, 0.08, 1.0, 0.92),
         inset_lh=inset_lh,
         inset_rh=inset_rh,
@@ -338,7 +364,7 @@ def _render_and_save(
     cb.set_ticklabels([f"{float(clim[0]):g}", f"{float(clim[1]):g}"])
     cb.outline.set_linewidth(0.8)
 
-    fig.savefig(out, dpi=dpi, facecolor="white")
+    fig.savefig(out, dpi=dpi, facecolor="none", transparent=True)
     plt.close(fig)
 
 
@@ -367,10 +393,11 @@ def _render_layered_svg(
 ) -> None:
     h, w = curv_rgb.shape[:2]
     dpi = 100.0
-    fig = plt.figure(figsize=(w / dpi, h / dpi), dpi=dpi, facecolor="white")
+    fig = plt.figure(figsize=(w / dpi, h / dpi), dpi=dpi, facecolor="none")
     main_rect = (0.0, 0.08 if show_colorbar else 0.0, 1.0, 0.92 if show_colorbar else 1.0)
     ax = fig.add_axes(list(main_rect))
     ax.set_gid("layers")
+    ax.patch.set_alpha(0.0)
     if hemi_layers is None:
         curv_rgba = np.dstack(
             [np.clip(curv_rgb, 0.0, 1.0), np.clip(curv_alpha, 0.0, 1.0)]
@@ -459,6 +486,7 @@ def _render_layered_svg(
             h_fig = main_rect[3] * (hh_px / canvas_h)
             ax_curv = fig.add_axes([x_fig, y_fig, w_fig, h_fig], zorder=2)
             ax_curv.set_gid(f"curv_{hemi_name}_axes")
+            ax_curv.patch.set_alpha(0.0)
             curv_rgba = np.dstack(
                 [
                     np.clip(np.asarray(layer["curv"], dtype=float), 0.0, 1.0),
@@ -471,6 +499,7 @@ def _render_layered_svg(
 
             ax_stat = fig.add_axes([x_fig, y_fig, w_fig, h_fig], zorder=3)
             ax_stat.set_gid(f"stat_{hemi_name}_axes")
+            ax_stat.patch.set_alpha(0.0)
             stat_rgba = np.dstack(
                 [
                     np.clip(np.asarray(layer["stat"], dtype=float), 0.0, 1.0),
@@ -575,7 +604,7 @@ def _render_layered_svg(
         cb.set_ticklabels([f"{float(clim[0]):g}", f"{float(clim[1]):g}"])
         cb.outline.set_linewidth(0.8)
 
-    fig.savefig(out, dpi=dpi, facecolor="white", format="svg")
+    fig.savefig(out, dpi=dpi, facecolor="none", transparent=True, format="svg")
     plt.close(fig)
 
 
@@ -632,6 +661,7 @@ def _draw_bottom_insets(
         y_px = y0_px + float(inset_margin_px)
         rect = [x_px / fig_w_px, y_px / fig_h_px, disp_w / fig_w_px, disp_h / fig_h_px]
         ax_in = fig.add_axes(rect, zorder=10)
+        ax_in.patch.set_alpha(0.0)
         im = ax_in.imshow(np.clip(img, 0.0, 1.0), interpolation="nearest")
         if with_gids:
             ax_in.set_gid(f"{gid}_axes")
@@ -876,6 +906,7 @@ def main() -> None:
     curv_alpha_layer: np.ndarray | None = None
     stat_layer: np.ndarray | None = None
     alpha_layer: np.ndarray | None = None
+    rgba: np.ndarray | None = None
     roi_layer: np.ndarray | None = None
     hemi_layers: dict[str, object] | None = None
     inset_lh: np.ndarray | None = None
@@ -922,8 +953,8 @@ def main() -> None:
             )
             roi_lh_img = vert_to_image(np.asarray(roi_lh), lookup_lh, badval=np.nan)
             roi_rh_img = vert_to_image(np.asarray(roi_rh), lookup_rh, badval=np.nan)
-        curv_alpha_lh = np.isfinite(curv_lh_img).astype(float)
-        curv_alpha_rh = np.isfinite(curv_rh_img).astype(float)
+        curv_alpha_lh = _lookup_alpha(lookup_lh)
+        curv_alpha_rh = _lookup_alpha(lookup_rh)
         curv_lh_rgb = mat_to_rgb(curv_lh_img, clim=(-1.0, 2.0), cmap="gray", rgbnan=1.0)
         curv_rh_rgb = mat_to_rgb(curv_rh_img, clim=(-1.0, 2.0), cmap="gray", rgbnan=1.0)
         stat_lh_rgb = mat_to_rgb(mapped_lh, clim=common_kwargs["clim"], cmap=args.cmap, rgbnan=1.0)
@@ -958,7 +989,7 @@ def main() -> None:
             if roi_rh_img is not None:
                 roi_rh_img = _flip_lr(roi_rh_img)
         bg_gray = float(np.clip(args.pair_bg_gray, 0.0, 1.0))
-        y0, y1, x0, x1 = _content_bbox(rgb_lh, bg_gray=bg_gray)
+        y0, y1, x0, x1 = _alpha_bbox(curv_alpha_lh)
         rgb_lh = rgb_lh[y0:y1, x0:x1, :]
         curv_lh_rgb = curv_lh_rgb[y0:y1, x0:x1, :]
         curv_alpha_lh = curv_alpha_lh[y0:y1, x0:x1]
@@ -966,7 +997,7 @@ def main() -> None:
         alpha_lh = alpha_lh[y0:y1, x0:x1]
         if roi_lh_img is not None:
             roi_lh_img = roi_lh_img[y0:y1, x0:x1]
-        y0, y1, x0, x1 = _content_bbox(rgb_rh, bg_gray=bg_gray)
+        y0, y1, x0, x1 = _alpha_bbox(curv_alpha_rh)
         rgb_rh = rgb_rh[y0:y1, x0:x1, :]
         curv_rh_rgb = curv_rh_rgb[y0:y1, x0:x1, :]
         curv_alpha_rh = curv_alpha_rh[y0:y1, x0:x1]
@@ -974,9 +1005,11 @@ def main() -> None:
         alpha_rh = alpha_rh[y0:y1, x0:x1]
         if roi_rh_img is not None:
             roi_rh_img = roi_rh_img[y0:y1, x0:x1]
-        rgb = _compose_side_by_side(
-            rgb_lh,
-            rgb_rh,
+        rgba_lh = _composite_rgba(curv_lh_rgb, curv_alpha_lh, stat_lh_rgb, alpha_lh)
+        rgba_rh = _composite_rgba(curv_rh_rgb, curv_alpha_rh, stat_rh_rgb, alpha_rh)
+        rgba = _compose_side_by_side(
+            rgba_lh,
+            rgba_rh,
             gap_px=max(0, int(args.pair_gap_px)),
             bg_gray=bg_gray,
             margin_px=max(0, int(args.pair_margin_px)),
@@ -1056,11 +1089,12 @@ def main() -> None:
         curv = read_surface_metric(subject, args.hemi, "curv", "", args.surfsuffix, **({"surfdir": surfdir} if surfdir else {}))
         curv_img = vert_to_image(np.asarray(curv, dtype=float) < 0, lookup, badval=np.nan)
         curv_layer = mat_to_rgb(curv_img, clim=(-1.0, 2.0), cmap="gray", rgbnan=1.0)
-        curv_alpha_layer = np.isfinite(curv_img).astype(float)
+        curv_alpha_layer = _lookup_alpha(lookup)
         stat_layer = mat_to_rgb(mapped, clim=common_kwargs["clim"], cmap=args.cmap, rgbnan=1.0)
         alpha_layer = np.isfinite(mapped).astype(float)
         if args.absthreshold is not None:
             alpha_layer = alpha_layer * (np.abs(mapped) > float(args.absthreshold)).astype(float)
+        rgba = _composite_rgba(curv_layer, curv_alpha_layer, stat_layer, alpha_layer)
 
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
@@ -1083,7 +1117,7 @@ def main() -> None:
             _m_lh, _lk_lh, in_lh, _o_lh = lookup_images(
                 subject, vals_lh_data, "lh", v_lh, **inset_kwargs
             )
-            inset_lh = _trim_to_content(in_lh, bg_gray=1.0)
+            inset_lh = _crop_rgba_to_alpha(_rgb_with_alpha(in_lh, _lookup_alpha(_lk_lh)))
         if vals_rh_data is not None:
             v_rh, _f_rh, _h_rh = lookup_viewpoint(
                 subject, "rh", str(args.inset_viewname), "inflated"
@@ -1091,11 +1125,14 @@ def main() -> None:
             _m_rh, _lk_rh, in_rh, _o_rh = lookup_images(
                 subject, vals_rh_data, "rh", v_rh, **inset_kwargs
             )
-            inset_rh = _trim_to_content(in_rh, bg_gray=1.0)
+            inset_rh = _crop_rgba_to_alpha(_rgb_with_alpha(in_rh, _lookup_alpha(_lk_rh)))
+
+    if rgba is None:
+        raise RuntimeError("No rendered image was produced")
 
     _render_and_save(
         out,
-        rgb,
+        rgba,
         show_colorbar=bool(args.show_colorbar),
         cmap_name=str(args.cmap),
         clim=final_clim,

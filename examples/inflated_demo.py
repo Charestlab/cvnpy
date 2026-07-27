@@ -92,7 +92,7 @@ def main() -> None:
         rng = np.random.default_rng(1)
         vals = rng.standard_normal(n)
 
-    _mapped, _lookup, rgb, _options = lookup_images(
+    _mapped, lookup, rgb, _options = lookup_images(
         subject,
         np.asarray(vals, dtype=float),
         args.hemi,
@@ -110,7 +110,11 @@ def main() -> None:
 
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
-    plt.imsave(out, np.clip(rgb, 0.0, 1.0))
+    imglookup = np.asarray(lookup["imglookup"])
+    extrapmask = np.asarray(lookup.get("extrapmask", np.zeros_like(imglookup, dtype=bool)))
+    alpha = (~extrapmask).astype(float)
+    rgba = np.dstack([np.clip(rgb, 0.0, 1.0), alpha])
+    plt.imsave(out, rgba)
     print(str(out.resolve()))
 
 

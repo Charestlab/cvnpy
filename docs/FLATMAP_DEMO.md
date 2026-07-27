@@ -82,6 +82,11 @@ python examples/flatmap_demo.py \
 - `--show-colorbar/--no-show-colorbar`
 - `--flat-margin-frac` (default `0.04`; increases/decreases flatmap padding)
 
+PNG outputs preserve alpha:
+- pixels outside the flat patch are transparent
+- inflated inset backgrounds are transparent
+- crop boxes are derived from the cortical lookup footprint, not from layer-specific stat values
+
 Threshold behavior:
 - pixels with `abs(value) <= absthreshold` render background curvature (gray)
 - above threshold render stat colormap
@@ -89,7 +94,8 @@ Threshold behavior:
 ## Bilateral Layout
 
 When `--hemi both`:
-- LH and RH are independently rendered, rotated, trimmed, then composed side-by-side
+- LH and RH are independently rendered, rotated, footprint-trimmed, then composed side-by-side
+- repeated renders with the same subject/view/resolution keep the flatmaps in stable pixel positions
 
 Useful controls:
 - `--pair-gap-px`

@@ -5,6 +5,7 @@ File: `examples/inflated_demo.py`
 ## Purpose
 
 `inflated_demo.py` renders a single-hemisphere inflated surface image.
+Pixels outside the rendered surface are transparent in PNG outputs.
 
 ## Basic Usage
 
