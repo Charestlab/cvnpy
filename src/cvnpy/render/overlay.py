@@ -17,6 +17,8 @@ from .colormap import mat_to_rgb
 
 
 def _as_rgb(color: Any) -> np.ndarray:
+    if isinstance(color, str):
+        return np.array(to_rgb(color), dtype=float)
     arr = np.asarray(color, dtype=float)
     if arr.size == 3:
         if np.any(arr > 1):

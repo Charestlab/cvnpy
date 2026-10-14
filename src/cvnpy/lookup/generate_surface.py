@@ -40,7 +40,7 @@ def _barycentric(
     x3, y3 = tri2d[2]
     denom = (y2 - y3) * (x1 - x3) + (x3 - x2) * (y1 - y3)
     if abs(denom) < 1e-12:
-        z = np.zeros_like(px, dtype=float)
+        z = np.full_like(px, np.nan, dtype=float)
         return z, z, z
     w1 = ((y2 - y3) * (px - x3) + (x3 - x2) * (py - y3)) / denom
     w2 = ((y3 - y1) * (px - x3) + (x1 - x3) * (py - y3)) / denom
@@ -177,7 +177,8 @@ def generate_surface_lookup(
         if not np.any(update):
             continue
 
-        # pick nearest triangle vertex per pixel by max barycentric weight.
+        # Select a vertex of the visible triangle by largest barycentric weight.
+        # This preserves discrete values; it is not Euclidean nearest-neighbor.
         bary = np.stack([w1, w2, w3], axis=-1)
         vidx_local = np.argmax(bary, axis=-1)
         fverts = np.array([f[0], f[1], f[2]], dtype=np.int64)
@@ -204,15 +205,22 @@ def generate_surface_lookup(
     flat_mask = imgmask.ravel()
     reverselookup[flat_lookup[flat_mask]] = pixflat[flat_mask]
 
-    # Fill missing vertices with nearest visible vertex in view-space XY.
-    missing = reverselookup < 0
+    # Only recover unsampled vertices incident to visible faces, within two
+    # pixels in 3D. An XY-only query projects the hidden back surface onto the
+    # front and incorrectly marks occluded vertices as visible.
+    visible_faces = np.unique(facebuf[imgmask])
+    candidates = np.zeros(verts_n, dtype=bool)
+    candidates[tri[visible_faces].ravel()] = True
+    missing = candidates & (reverselookup < 0)
     have = reverselookup >= 0
     if np.any(missing) and np.any(have):
-        tree = cKDTree(viewvert[have, :2])
-        _dist, nn = tree.query(viewvert[missing, :2], k=1)
+        pixel_scale = np.array([sx, sy, (sx + sy) / 2.0])
+        tree = cKDTree(viewvert[have] * pixel_scale)
+        dist, nn = tree.query(viewvert[missing] * pixel_scale, k=1)
         have_idx = np.flatnonzero(have)
         missing_idx = np.flatnonzero(missing)
-        reverselookup[missing_idx] = reverselookup[have_idx[nn]]
+        nearby = dist <= 2.0
+        reverselookup[missing_idx[nearby]] = reverselookup[have_idx[nn[nearby]]]
 
     # Compute TXpix similar to other generators (row/col conventions).
     tx = -xview[0]

@@ -58,8 +58,6 @@ def image_to_vert(img: np.ndarray, lookup: dict, badval: float = 0.0) -> np.ndar
     vertvalues = np.full((verts_n,), badval, dtype=float)
 
     flat_img = img.ravel()
-    flat_lookup = imglookup.ravel()
-    vertvalues[flat_lookup] = flat_img
 
     reverselookup = np.asarray(lookup["reverselookup"], dtype=np.int64)
     valid = reverselookup >= 0
@@ -115,4 +113,6 @@ def vertidx_to_imagexy(vertidx: np.ndarray, lookup: dict) -> np.ndarray:
 
     y = (pix // w) + 1
     x = (pix % w) + 1
-    return np.c_[x, y]
+    xy = np.c_[x, y].astype(float)
+    xy[pix < 0] = np.nan
+    return xy

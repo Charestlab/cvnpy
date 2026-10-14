@@ -186,7 +186,7 @@ def test_generate_surface_lookup_basic() -> None:
         dtype=float,
     )
     faces = np.array([[0, 1, 2], [0, 2, 3]], dtype=np.int64)
-    lk = generate_surface_lookup(verts, faces, 0, 0, 0, imgheight=32)
+    lk = generate_surface_lookup(verts, faces, 0, 90, 0, imgheight=32)
     assert lk["imglookup"].shape == (32, 32)
     assert lk["reverselookup"].shape == (4,)
     assert lk["shading"].shape == (32, 32)
@@ -215,12 +215,13 @@ def test_lookup_images_inflated_integration(tmp_path: Path, monkeypatch: object)
         "subj01",
         vals,
         "lh",
-        [0, 0, 0],
+        [0, 90, 0],
         surftype="inflated",
         imageres=28,
         surfshading=True,
     )
 
+    assert np.any(np.isfinite(mapped))
     assert mapped.shape == (28, 28)
     assert rgb.shape == (28, 28, 3)
     assert "shading" in lk
@@ -333,8 +334,18 @@ def test_lookup_cache_roundtrip(tmp_path: Path, monkeypatch: object) -> None:
     cache_files = list(cache_dir.glob("*.pkl"))
     assert len(cache_files) == 1
 
-    # Remove source geometry: second run should still work from cache.
-    (surfdir / "lh.sphere").unlink()
+    # Geometry remains available for fingerprinting, but a cache hit must not
+    # invoke the generator again.
+    def unexpected_generation(*args, **kwargs):
+        raise AssertionError("cache hit regenerated the lookup")
+
+    import importlib
+
+    monkeypatch.setattr(
+        importlib.import_module("cvnpy.core.lookup_images"),
+        "generate_sphere_lookup",
+        unexpected_generation,
+    )
     mapped2, _lk2, _rgb2, _opts2 = lookup_images(
         "subj01",
         vals,

@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.6 - 2026-10-14
+
+- Isolate lookup caches by subject, geometry contents, and exact rendering options; invalidate older lookups.
+- Reject degenerate projected triangles and preserve occlusion in reverse surface mappings.
+- Mask sphere lookups outside the projected visible mesh.
+- Split bilateral per-vertex transparency, backgrounds, and ROI masks by hemisphere.
+- Prevent background pixels from populating unmapped vertices and return NaN coordinates for hidden vertices.
+- Accept named ROI colors and add rendering regression tests.
+- Preserve existing medial/lateral viewpoints and scalar color conventions.
+
 ## 0.1.3 - 2026-07-09
 
 - Remove obsolete flatmap artifact-tuning options and the associated dead code paths.
