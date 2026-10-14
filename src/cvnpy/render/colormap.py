@@ -7,8 +7,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from matplotlib import colormaps
 import numpy as np
+from matplotlib import colormaps
 
 
 def _cmapsign4_table(n: int = 64) -> np.ndarray:

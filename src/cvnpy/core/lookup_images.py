@@ -6,6 +6,9 @@ Parity target:
 
 from __future__ import annotations
 
+import hashlib
+import json
+import logging
 import os
 import pickle
 import re
@@ -18,14 +21,16 @@ import numpy as np
 from ..io.metrics import read_surface_metric
 from ..io.surfaces import read_surface
 from ..lookup.generate_flat import generate_flat_lookup
-from ..lookup.generate_surface import generate_surface_lookup
 from ..lookup.generate_sphere import generate_sphere_lookup
+from ..lookup.generate_surface import generate_surface_lookup
 from ..lookup.map import vert_to_image
 from ..render.colormap import mat_to_rgb
 from ..render.overlay import apply_overlays
 from ..view.viewpoints import lookup_viewpoint
 
-LOOKUP_CACHE_VERSION = 10
+logger = logging.getLogger(__name__)
+
+LOOKUP_CACHE_VERSION = 11
 
 
 def _is_flat_surftype(surftype: str) -> bool:
@@ -72,13 +77,17 @@ def _merge_options(kwargs: dict[str, Any]) -> dict[str, Any]:
     return out
 
 
-def _as_view_triplet(subject: str, hemi: str, view_in: Any, surftype: str) -> list[float]:
+def _as_view_triplet(
+    subject: str, hemi: str, view_in: Any, surftype: str
+) -> list[float]:
     if isinstance(view_in, str):
         viewpt, _flip, _viewhemi = lookup_viewpoint(subject, hemi, view_in, surftype)
         return [float(viewpt[0]), float(viewpt[1]), float(viewpt[2])]
     arr = np.asarray(view_in, dtype=float).ravel()
     if arr.size != 3:
-        raise ValueError("view_az_el_tilt must be a view name or 3-element view triplet")
+        raise ValueError(
+            "view_az_el_tilt must be a view name or 3-element view triplet"
+        )
     return [float(arr[0]), float(arr[1]), float(arr[2])]
 
 
@@ -130,20 +139,49 @@ def _cache_file_path(
     view: list[float],
     options: dict[str, Any],
 ) -> Path:
-    surftype = _safe_tag(str(options["surftype"]))
-    surfsuffix = _safe_tag(str(options["surfsuffix"]))
-    xy = tuple(options["xyextent"])
+    # Include geometry contents, not only a subject name: a shared cache may
+    # serve several subjects, and meshes/patches can be replaced in place.
+    surfdir = options.get("surfdir")
+    if not surfdir:
+        subjects_dir = os.environ.get("SUBJECTS_DIR")
+        surfdir = str(Path(subjects_dir) / subject / "surf") if subjects_dir else None
+    source_dir = Path(surfdir).expanduser().resolve() if surfdir else None
+    surftype = str(options["surftype"])
+    suffix = "" if options["surfsuffix"] == "orig" else str(options["surfsuffix"])
+    names = [f"{hemi}.{surftype}{suffix}"]
+    if ".patch." in surftype:
+        patch = f"{hemi}.{suffix + '.' if suffix else ''}{surftype}"
+        names = [f"{hemi}.white{suffix}", patch, patch + ".asc"]
+    sources = {}
+    for name in names:
+        path = source_dir / name if source_dir else None
+        if path is not None and path.is_file():
+            digest = hashlib.sha256()
+            with path.open("rb") as stream:
+                for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+                    digest.update(chunk)
+            sources[name] = digest.hexdigest()
+        else:
+            sources[name] = None
     res = options["imageres"]
-    if isinstance(res, (list, tuple)):
-        res_tag = f"{int(res[0])}x{int(res[1])}"
-    else:
-        res_tag = str(int(res))
-    tag = (
-        f"{surftype}_lookupv{LOOKUP_CACHE_VERSION}_{hemi}_"
-        f"az{int(round(view[0]))}_el{int(round(view[1]))}_tilt{int(round(view[2]))}_"
-        f"xy{xy[0]:.3f}x{xy[1]:.3f}_res{res_tag}_{surfsuffix}.pkl"
-    )
-    return _cache_dir_for_subject(subject, options) / _safe_tag(tag)
+    identity = {
+        "version": LOOKUP_CACHE_VERSION,
+        "subject": subject,
+        "surfdir": str(source_dir),
+        "sources": sources,
+        "hemi": hemi,
+        "surftype": surftype,
+        "surfsuffix": str(options["surfsuffix"]),
+        "view": [float(v) for v in view],
+        "xyextent": [float(v) for v in options["xyextent"]],
+        "resolution": [int(v) for v in res]
+        if isinstance(res, (list, tuple))
+        else int(res),
+        "flat_margin_frac": float(options["flat_margin_frac"]),
+    }
+    digest = hashlib.sha256(json.dumps(identity, sort_keys=True).encode()).hexdigest()
+    tag = f"{_safe_tag(surftype)}_lookupv{LOOKUP_CACHE_VERSION}_{hemi}_{digest}.pkl"
+    return _cache_dir_for_subject(subject, options) / tag
 
 
 def _try_load_cached_lookup(
@@ -160,10 +198,11 @@ def _try_load_cached_lookup(
     try:
         with path.open("rb") as f:
             obj = pickle.load(f)
-        if not isinstance(obj, dict):
+        if not isinstance(obj, dict) or obj.get("cache_key") != path.stem:
             return None
         return obj
     except Exception:
+        logger.debug("Ignoring unreadable lookup cache %s", path, exc_info=True)
         return None
 
 
@@ -179,8 +218,11 @@ def _try_save_cached_lookup(
     try:
         path = _cache_file_path(subject, hemi, view, options)
         with path.open("wb") as f:
-            pickle.dump(lookup, f, protocol=pickle.HIGHEST_PROTOCOL)
+            pickle.dump(
+                {**lookup, "cache_key": path.stem}, f, protocol=pickle.HIGHEST_PROTOCOL
+            )
     except Exception:
+        logger.debug("Unable to save lookup cache", exc_info=True)
         # cache write failures should not block rendering
         return
 
@@ -256,7 +298,9 @@ def _lookup_one_hemi(
     options: dict[str, Any],
 ) -> tuple[np.ndarray, dict, np.ndarray]:
     view = _as_view_triplet(subject, hemi, view_az_el_tilt, str(options["surftype"]))
-    lk = lookup if lookup is not None else _generate_lookup(subject, hemi, view, options)
+    lk = (
+        lookup if lookup is not None else _generate_lookup(subject, hemi, view, options)
+    )
 
     local_options = dict(options)
     alpha_opt = local_options.get("overlayalpha")
@@ -309,11 +353,15 @@ def lookup_images(
 
     if isinstance(hemi, list):
         if vals_arr.ndim != 1:
-            raise ValueError("For multi-hemi mode, vals must be 1D concatenated LH+RH array")
+            raise ValueError(
+                "For multi-hemi mode, vals must be 1D concatenated LH+RH array"
+            )
 
         hemis = [h.lower() for h in hemi]
         if set(hemis) != {"lh", "rh"}:
-            raise ValueError("Multi-hemi mode currently expects ['lh','rh'] in any order")
+            raise ValueError(
+                "Multi-hemi mode currently expects ['lh','rh'] in any order"
+            )
 
         # Determine split by querying vertex counts.
         surf_kwargs: dict[str, Any] = {}
@@ -351,8 +399,10 @@ def lookup_images(
             lookup_list = [None, None]
 
         view_in = view_az_el_tilt
-        if isinstance(view_in, list) and len(view_in) == 2 and all(
-            isinstance(v, (list, tuple, np.ndarray)) for v in view_in
+        if (
+            isinstance(view_in, list)
+            and len(view_in) == 2
+            and all(isinstance(v, (list, tuple, np.ndarray)) for v in view_in)
         ):
             v_lh = view_in[0]
             v_rh = view_in[1]
@@ -360,11 +410,30 @@ def lookup_images(
             v_lh = view_in
             v_rh = view_in
 
+        def hemi_options(start: int, stop: int) -> dict[str, Any]:
+            local = dict(options)
+            for name in ("overlayalpha", "background", "roimask"):
+                value = options.get(name)
+                # roimask lists represent multiple ROI arrays.
+                if name == "roimask" and isinstance(value, list):
+                    local[name] = [split_option(v, start, stop) for v in value]
+                else:
+                    local[name] = split_option(value, start, stop)
+            return local
+
+        def split_option(value: Any, start: int, stop: int) -> Any:
+            if value is None or isinstance(value, str):
+                return value
+            arr = np.asarray(value)
+            if arr.ndim == 1 and arr.size == n_lh + n_rh:
+                return arr[start:stop]
+            return value
+
         mapped_lh, lk_lh, rgb_lh = _lookup_one_hemi(
-            subject, lvals, "lh", v_lh, lookup_list[0], options
+            subject, lvals, "lh", v_lh, lookup_list[0], hemi_options(0, n_lh)
         )
         mapped_rh, lk_rh, rgb_rh = _lookup_one_hemi(
-            subject, rvals, "rh", v_rh, lookup_list[1], options
+            subject, rvals, "rh", v_rh, lookup_list[1], hemi_options(n_lh, n_lh + n_rh)
         )
 
         mapped = np.concatenate([mapped_lh, mapped_rh], axis=1)

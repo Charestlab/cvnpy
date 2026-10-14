@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cvnpy"
-version = "0.1.5"
+version = "0.1.6"
 description = "Python tools for CVN-style cortical flatmap and inflated-surface visualizations"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -43,7 +43,7 @@ dependencies = [
 dev = [
   "build>=1.2",
   "pytest>=8.0",
-  "ruff>=0.5",
+  "ruff==0.17.0",
   "twine>=5.0"
 ]
 docs = [

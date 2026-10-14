@@ -10,7 +10,7 @@ from typing import Any
 
 import numpy as np
 from scipy.interpolate import NearestNDInterpolator
-from scipy.spatial import cKDTree
+from scipy.spatial import Delaunay, QhullError, cKDTree
 
 
 def _as_img_shape(img_n: int | tuple[int, int]) -> tuple[int, int]:
@@ -160,12 +160,20 @@ def generate_sphere_lookup(
             viewvert[viewmask_padded, :2], vertidx[viewmask_padded]
         )
         mapped = interp(imgx, imgy)
-        extrapmask = ~np.isfinite(mapped)
+        # NearestNDInterpolator extrapolates everywhere. Match the visible
+        # projected convex hull rather than treating those values as surface.
+        try:
+            hull = Delaunay(viewvert[viewmask_padded, :2])
+            inside = hull.find_simplex(np.c_[imgx.ravel(), imgy.ravel()]) >= 0
+            extrapmask = ~inside.reshape((h, w))
+        except QhullError:
+            extrapmask = np.ones((h, w), dtype=bool)
+        extrapmask |= ~np.isfinite(mapped)
         mapped[extrapmask] = 0
         imglookup = mapped.astype(np.int64)
 
     lookupmasks = np.zeros((vertsph.shape[0],), dtype=bool)
-    lookupmasks[np.unique(imglookup)] = True
+    lookupmasks[np.unique(imglookup[~extrapmask])] = True
 
     reverselookup = np.full((vertsph.shape[0],), -1, dtype=np.int64)
     pixflat = np.arange(h * w, dtype=np.int64)

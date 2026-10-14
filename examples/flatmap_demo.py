@@ -1,5 +1,4 @@
 """Generate a flatmap PNG using cvnpy."""
-# ruff: noqa: E402
 
 from __future__ import annotations
 
@@ -11,6 +10,7 @@ from pathlib import Path
 os.environ.setdefault("MPLCONFIGDIR", str(Path(tempfile.gettempdir()) / "matplotlib"))
 
 import matplotlib
+
 matplotlib.use("Agg")
 matplotlib.rcParams["image.composite_image"] = False
 import matplotlib.pyplot as plt
@@ -22,9 +22,9 @@ from scipy.ndimage import distance_transform_edt
 
 from cvnpy.core.lookup_images import lookup_images
 from cvnpy.io.metrics import read_surface_metric
+from cvnpy.io.surfaces import read_surface
 from cvnpy.lookup.map import vert_to_image
 from cvnpy.render.colormap import mat_to_rgb
-from cvnpy.io.surfaces import read_surface
 from cvnpy.view.viewpoints import lookup_viewpoint
 
 
@@ -454,12 +454,12 @@ def _render_layered_svg(
                             fontsize=float(roi_label_size),
                             ha="center",
                             va="center",
-                            bbox=dict(
-                                boxstyle="round,pad=0.15",
-                                facecolor="black",
-                                edgecolor="none",
-                                alpha=0.5,
-                            ),
+                            bbox={
+                                "boxstyle": "round,pad=0.15",
+                                "facecolor": "black",
+                                "edgecolor": "none",
+                                "alpha": 0.5,
+                            },
                         )
                         txt.set_gid(f"roi_label_{hemi_name}_{rid}")
             ax_roi.set_xlim(0, roi_arr.shape[1] - 1)
@@ -538,37 +538,36 @@ def _render_layered_svg(
                         )
                         cs.set_gid(f"roi_{hemi_name}_{int(roi_ids[ridx])}")
 
-                        if draw_roi_names:
-                            if np.any(rmask):
-                                # MATLAB parity (drawroinames.m):
-                                # place label at argmax(bwdist(~m)), i.e. deepest interior point.
-                                md = distance_transform_edt(rmask)
-                                yy, xx = np.unravel_index(int(np.argmax(md)), md.shape)
-                                rid = int(roi_ids[ridx])
-                                if roi_names and rid - 1 < len(roi_names):
-                                    name = str(roi_names[rid - 1])
-                                elif roi_names and len(roi_names) == len(roi_ids):
-                                    name = str(roi_names[ridx])
-                                elif roi_ids.size == 1 and roi_names and len(roi_names) >= 1:
-                                    name = str(roi_names[0])
-                                else:
-                                    name = str(rid)
-                                txt = ax_roi.text(
-                                    float(xx),
-                                    float(yy),
-                                    name,
-                                    color=roi_label_color,
-                                    fontsize=float(roi_label_size),
-                                    ha="center",
-                                    va="center",
-                                    bbox=dict(
-                                        boxstyle="round,pad=0.15",
-                                        facecolor="black",
-                                        edgecolor="none",
-                                        alpha=0.5,
-                                    ),
-                                )
-                                txt.set_gid(f"roi_label_{hemi_name}_{rid}")
+                        if draw_roi_names and np.any(rmask):
+                            # MATLAB parity (drawroinames.m):
+                            # place label at argmax(bwdist(~m)), i.e. deepest interior point.
+                            md = distance_transform_edt(rmask)
+                            yy, xx = np.unravel_index(int(np.argmax(md)), md.shape)
+                            rid = int(roi_ids[ridx])
+                            if roi_names and rid - 1 < len(roi_names):
+                                name = str(roi_names[rid - 1])
+                            elif roi_names and len(roi_names) == len(roi_ids):
+                                name = str(roi_names[ridx])
+                            elif roi_ids.size == 1 and roi_names and len(roi_names) >= 1:
+                                name = str(roi_names[0])
+                            else:
+                                name = str(rid)
+                            txt = ax_roi.text(
+                                float(xx),
+                                float(yy),
+                                name,
+                                color=roi_label_color,
+                                fontsize=float(roi_label_size),
+                                ha="center",
+                                va="center",
+                                bbox={
+                                    "boxstyle": "round,pad=0.15",
+                                    "facecolor": "black",
+                                    "edgecolor": "none",
+                                    "alpha": 0.5,
+                                },
+                            )
+                            txt.set_gid(f"roi_label_{hemi_name}_{rid}")
 
                     ax_roi.set_xlim(0, roi_arr.shape[1] - 1)
                     ax_roi.set_ylim(roi_arr.shape[0] - 1, 0)
@@ -873,25 +872,25 @@ def main() -> None:
     clim = _parse_pair(args.clim) if args.clim else (-np.inf, np.inf)
     stat_metric = args.stat_map if args.stat_map else args.metric
 
-    common_kwargs = dict(
-        surftype=args.surftype,
-        surfsuffix=args.surfsuffix,
-        imageres=args.imageres,
-        xyextent=(xy[0], xy[1]),
-        background=args.background,
-        surfshading=False,
-        cmap=args.cmap,
-        clim=clim,
-        rgbnan=1.0,
-        cache_dir=args.cache_dir,
-        savelookup=not args.no_cache,
-        reset=bool(args.no_cache),
-        surfdir=surfdir,
-        flat_margin_frac=float(args.flat_margin_frac),
-        absthreshold=args.absthreshold,
-        bg_cmap="gray",
-        bg_clim=(-1.0, 2.0),
-    )
+    common_kwargs = {
+        "surftype": args.surftype,
+        "surfsuffix": args.surfsuffix,
+        "imageres": args.imageres,
+        "xyextent": (xy[0], xy[1]),
+        "background": args.background,
+        "surfshading": False,
+        "cmap": args.cmap,
+        "clim": clim,
+        "rgbnan": 1.0,
+        "cache_dir": args.cache_dir,
+        "savelookup": not args.no_cache,
+        "reset": bool(args.no_cache),
+        "surfdir": surfdir,
+        "flat_margin_frac": float(args.flat_margin_frac),
+        "absthreshold": args.absthreshold,
+        "bg_cmap": "gray",
+        "bg_clim": (-1.0, 2.0),
+    }
     view = _parse_view(args.view)
 
     all_vals_for_clim: np.ndarray | None = None
@@ -1073,7 +1072,7 @@ def main() -> None:
             m = float(np.nanmax(np.abs(vals)))
             if np.isfinite(m) and m > 0:
                 common_kwargs["clim"] = (-m, m)
-        mapped, lookup, rgb, _options = lookup_images(
+        mapped, lookup, _rgb, _options = lookup_images(
             subject,
             vals,
             args.hemi,

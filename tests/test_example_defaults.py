@@ -5,7 +5,6 @@ from pathlib import Path
 
 import numpy as np
 
-
 ROOT = Path(__file__).resolve().parents[1]
 FLATMAP_DEMO = ROOT / "examples" / "flatmap_demo.py"
 

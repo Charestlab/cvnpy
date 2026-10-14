@@ -67,3 +67,30 @@ Fix:
 - export with `--out-svg`
 - inspect element IDs (`curv`, `stat`, `colorbar`, `labels_lh`, `labels_rh`, insets)
 - use an SVG editor/script that preserves group IDs
+
+## Lookup caches in 0.1.6
+
+Version 0.1.6 uses lookup cache version 11. Older files are ignored and the first
+render regenerates its lookup. Cache identity includes the subject, resolved
+surface directory, geometry/patch file contents, and exact view, extent,
+resolution, and flat-margin options. A shared cache directory can therefore
+serve different meshes without reusing another subject's lookup.
+
+Source geometry must remain available even on cache hits so its contents can be
+verified. To render without reading geometry, explicitly pass a previously
+returned `lookup` dictionary; responsibility for matching that dictionary to the
+data and requested view then belongs to the caller.
+
+## Hidden vertices and medial views
+
+Reverse inflated-surface lookups leave occluded vertices unmapped (`-1`).
+`vertidx_to_imagexy` returns NaN coordinates for them, and `image_to_vert` retains
+`badval`. Nearby unsampled vertices belonging to visible faces can be recovered
+within a two-pixel 3D distance; this is a conservative approximation, not exact
+MATLAB reverse-lookup parity.
+
+Medial/lateral camera presets and correlation signs are unchanged in 0.1.6.
+Compare the same anatomical vertex labels across flat and inflated views: the
+cut and projection can make neighboring regions look quite different. The
+renderer does not automatically exclude the medial wall. Apply an appropriate
+cortex mask to the values when those vertices should not be interpreted.

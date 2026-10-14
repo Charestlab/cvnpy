@@ -17,7 +17,7 @@ from scipy.spatial import cKDTree
 def _as_img_shape(img_n: int | tuple[int, int], aspect: float) -> tuple[int, int]:
     if isinstance(img_n, int):
         h = int(img_n)
-        w = max(1, int(round(h * aspect)))
+        w = max(1, round(h * aspect))
         return h, w
     if len(img_n) != 2:
         raise ValueError("img_n must be int or (height,width)")

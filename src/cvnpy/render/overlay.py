@@ -17,6 +17,8 @@ from .colormap import mat_to_rgb
 
 
 def _as_rgb(color: Any) -> np.ndarray:
+    if isinstance(color, str):
+        return np.array(to_rgb(color), dtype=float)
     arr = np.asarray(color, dtype=float)
     if arr.size == 3:
         if np.any(arr > 1):
@@ -166,7 +168,7 @@ def _apply_roi_outlines(
 
         width = float(widths[min(i, len(widths) - 1)])
         if width > 1:
-            boundary = binary_dilation(boundary, iterations=max(1, int(round(width))))
+            boundary = binary_dilation(boundary, iterations=max(1, round(width)))
 
         c = _as_rgb(colors[min(i, len(colors) - 1)])
         out[boundary, :] = c.reshape(1, 3)
