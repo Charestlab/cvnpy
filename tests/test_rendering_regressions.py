@@ -1,11 +1,12 @@
 """Regression tests for rendering and lookup correctness."""
 
+import nibabel.freesurfer.io as fs
 import numpy as np
 import pytest
-import nibabel.freesurfer.io as fs
-from cvnpy.core.lookup_images import lookup_images, _cache_file_path, _merge_options
-from cvnpy.lookup.generate_surface import generate_surface_lookup
+
+from cvnpy.core.lookup_images import _cache_file_path, _merge_options, lookup_images
 from cvnpy.lookup.generate_sphere import generate_sphere_lookup
+from cvnpy.lookup.generate_surface import generate_surface_lookup
 from cvnpy.lookup.map import image_to_vert
 from cvnpy.render.overlay import _as_rgb
 
@@ -103,14 +104,14 @@ def test_changed_geometry_invalidates_cache(tmp_path):
     verts, faces = layers()
     path = tmp_path / "lh.inflated"
     fs.write_geometry(str(path), verts, faces)
-    kwargs = dict(
-        surfdir=str(tmp_path),
-        surftype="inflated",
-        imageres=31,
-        cache_dir=str(tmp_path / "cache"),
-        clim=(0, 7),
-        surfshading=False,
-    )
+    kwargs = {
+        "surfdir": str(tmp_path),
+        "surftype": "inflated",
+        "imageres": 31,
+        "cache_dir": str(tmp_path / "cache"),
+        "clim": (0, 7),
+        "surfshading": False,
+    }
     before, _, _, _ = lookup_images("test", np.arange(8.0), "lh", [90, 0, 0], **kwargs)
     # Move the back plane in front without changing vertex/face counts.
     verts[4:, 0] = 2
@@ -174,15 +175,15 @@ def test_bilateral_options_match_separate_hemispheres(tmp_path):
     alpha = np.linspace(0.1, 0.9, 16)
     background = np.linspace(0, 1, 16)
     roi = (np.arange(16) % 3 == 0).astype(float)
-    options = dict(
-        surfdir=str(tmp_path),
-        surftype="inflated",
-        imageres=31,
-        cache_dir=str(tmp_path / "cache"),
-        clim=(-1, 1),
-        surfshading=False,
-        roicolor="red",
-    )
+    options = {
+        "surfdir": str(tmp_path),
+        "surftype": "inflated",
+        "imageres": 31,
+        "cache_dir": str(tmp_path / "cache"),
+        "clim": (-1, 1),
+        "surfshading": False,
+        "roicolor": "red",
+    }
     _, _, both, _ = lookup_images(
         "test",
         values,
@@ -225,12 +226,12 @@ def test_missing_source_does_not_reuse_unverifiable_cache(tmp_path):
     verts, faces = layers()
     path = tmp_path / "lh.inflated"
     fs.write_geometry(str(path), verts, faces)
-    options = dict(
-        surfdir=str(tmp_path),
-        surftype="inflated",
-        imageres=31,
-        cache_dir=str(tmp_path / "cache"),
-    )
+    options = {
+        "surfdir": str(tmp_path),
+        "surftype": "inflated",
+        "imageres": 31,
+        "cache_dir": str(tmp_path / "cache"),
+    }
     lookup_images("test", np.arange(8.0), "lh", "medial", **options)
     path.unlink()
     with pytest.raises(FileNotFoundError):

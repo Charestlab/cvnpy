@@ -109,7 +109,7 @@ def vertidx_to_imagexy(vertidx: np.ndarray, lookup: dict) -> np.ndarray:
 
     rev = np.asarray(lookup["reverselookup"], dtype=np.int64)
     pix = rev[idx]
-    h, w = np.asarray(lookup["imglookup"]).shape
+    _h, w = np.asarray(lookup["imglookup"]).shape
 
     y = (pix // w) + 1
     x = (pix % w) + 1

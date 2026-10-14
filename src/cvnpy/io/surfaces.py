@@ -6,6 +6,7 @@ Parity target:
 
 from __future__ import annotations
 
+import logging
 import os
 from pathlib import Path
 from typing import Any
@@ -15,6 +16,8 @@ import numpy as np
 from matplotlib.path import Path as MplPath
 
 from ..types import Surface
+
+logger = logging.getLogger(__name__)
 
 
 def _resolve_surfdir(subject: str, surfdir: str | None = None) -> Path:
@@ -273,7 +276,7 @@ def _read_one_surface(
                     patchmask=None,
                 )
             except Exception:
-                pass
+                logger.debug("Patch is not a regular geometry file: %s", patchfile, exc_info=True)
         raise FileNotFoundError(f"surface file not found: {surffile}")
 
     try:

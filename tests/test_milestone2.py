@@ -7,8 +7,8 @@ import numpy as np
 
 from cvnpy.core.lookup_images import lookup_images
 from cvnpy.lookup.generate_flat import generate_flat_lookup
-from cvnpy.lookup.generate_surface import generate_surface_lookup
 from cvnpy.lookup.generate_sphere import generate_sphere_lookup
+from cvnpy.lookup.generate_surface import generate_surface_lookup
 from cvnpy.lookup.map import image_to_vert, vert_to_image
 
 

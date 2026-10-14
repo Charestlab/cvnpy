@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 import os
 import pickle
 import re
@@ -20,12 +21,14 @@ import numpy as np
 from ..io.metrics import read_surface_metric
 from ..io.surfaces import read_surface
 from ..lookup.generate_flat import generate_flat_lookup
-from ..lookup.generate_surface import generate_surface_lookup
 from ..lookup.generate_sphere import generate_sphere_lookup
+from ..lookup.generate_surface import generate_surface_lookup
 from ..lookup.map import vert_to_image
 from ..render.colormap import mat_to_rgb
 from ..render.overlay import apply_overlays
 from ..view.viewpoints import lookup_viewpoint
+
+logger = logging.getLogger(__name__)
 
 LOOKUP_CACHE_VERSION = 11
 
@@ -199,6 +202,7 @@ def _try_load_cached_lookup(
             return None
         return obj
     except Exception:
+        logger.debug("Ignoring unreadable lookup cache %s", path, exc_info=True)
         return None
 
 
@@ -218,6 +222,7 @@ def _try_save_cached_lookup(
                 {**lookup, "cache_key": path.stem}, f, protocol=pickle.HIGHEST_PROTOCOL
             )
     except Exception:
+        logger.debug("Unable to save lookup cache", exc_info=True)
         # cache write failures should not block rendering
         return
 
